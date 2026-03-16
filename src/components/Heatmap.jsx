@@ -8,7 +8,7 @@ const MARGIN = { top: 24, right: 90, bottom: 70, left: 100 };
 function applyTextHalo(sel) {
   sel
     .attr("paint-order", "stroke")
-    .attr("stroke", "rgba(8, 8, 26, 0.85)")
+    .attr("stroke", "rgba(15, 20, 25, 0.9)")
     .attr("stroke-width", 4)
     .attr("stroke-linejoin", "round");
 }
@@ -50,12 +50,12 @@ function findLabelPos(points, xScale, yScale, width, height) {
 
 function mortgagePalette(t) {
   const stops = [
-    [0.00, [15, 18, 60]],
-    [0.20, [50, 20, 110]],
-    [0.40, [140, 30, 115]],
-    [0.60, [210, 60, 60]],
-    [0.80, [240, 150, 30]],
-    [1.00, [255, 235, 80]],
+    [0.00, [25, 45, 70]],
+    [0.20, [30, 65, 100]],
+    [0.40, [30, 90, 110]],
+    [0.60, [70, 140, 120]],
+    [0.80, [180, 155, 80]],
+    [1.00, [201, 165, 92]],
   ];
   let i = 0;
   while (i < stops.length - 2 && stops[i + 1][0] < t) i++;
@@ -69,10 +69,10 @@ function mortgagePalette(t) {
 }
 
 const DTI_COLORS = {
-  comfortable: "rgba(0, 200, 120, 0.0)",
-  stretching: "rgba(240, 180, 0, 0.18)",
-  maximum: "rgba(240, 100, 30, 0.28)",
-  overlimit: "rgba(230, 40, 40, 0.38)",
+  comfortable: "rgba(63, 185, 80, 0.0)",
+  stretching: "rgba(210, 153, 34, 0.18)",
+  maximum: "rgba(219, 109, 40, 0.28)",
+  overlimit: "rgba(248, 81, 73, 0.38)",
 };
 
 export default function Heatmap({
@@ -236,11 +236,11 @@ export default function Heatmap({
       if (px === undefined || py === undefined) return;
       g.append("rect")
         .attr("x", px).attr("y", py).attr("width", bw).attr("height", bh)
-        .attr("fill", "none").attr("stroke", "#fff").attr("stroke-width", 2.5)
+        .attr("fill", "none").attr("stroke", "var(--text)").attr("stroke-width", 2.5)
         .attr("rx", 2).style("pointer-events", "none");
       g.append("text")
         .attr("x", px + bw / 2).attr("y", py + bh / 2 + 4)
-        .attr("text-anchor", "middle").attr("fill", "#fff")
+        .attr("text-anchor", "middle").attr("fill", "var(--text)")
         .attr("font-size", "10px").attr("font-weight", "700")
         .style("pointer-events", "none").text(idx + 1);
     });
@@ -352,14 +352,6 @@ export default function Heatmap({
         defs.append("clipPath").attr("id", "chart-clip")
           .append("rect").attr("width", width).attr("height", height);
 
-        const glowFilter = defs.append("filter").attr("id", "rent-glow")
-          .attr("filterUnits", "userSpaceOnUse")
-          .attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
-        glowFilter.append("feGaussianBlur").attr("stdDeviation", "5").attr("result", "blur");
-        const feMerge = glowFilter.append("feMerge");
-        feMerge.append("feMergeNode").attr("in", "blur");
-        feMerge.append("feMergeNode").attr("in", "SourceGraphic");
-
         const lineGen = d3.line()
           .x((d) => xLinear(d.price)).y((d) => yLinear(d.tax))
           .curve(d3.curveMonotoneY);
@@ -403,10 +395,10 @@ export default function Heatmap({
           }
         }
 
-        // Glow + main line for Scenario A
+        // Shadow + main line for Scenario A
         rentLineG.append("path").datum(visiblePoints).attr("d", lineGen)
-          .attr("fill", "none").attr("stroke", "var(--rent)")
-          .attr("stroke-width", 12).attr("opacity", 0.25).attr("filter", "url(#rent-glow)");
+          .attr("fill", "none").attr("stroke", "rgba(0,0,0,0.4)")
+          .attr("stroke-width", 6).attr("opacity", 0.5);
 
         rentLineG.append("path").datum(visiblePoints).attr("d", lineGen)
           .attr("fill", "none").attr("stroke", "var(--rent)")
@@ -466,22 +458,13 @@ export default function Heatmap({
             (d) => d.price >= prices[0] && d.price <= prices[prices.length - 1],
           );
           if (visibleB.length >= 2) {
-            // Glow for B line
-            const glowFilterB = defs.append("filter").attr("id", "compare-glow")
-              .attr("filterUnits", "userSpaceOnUse")
-              .attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
-            glowFilterB.append("feGaussianBlur").attr("stdDeviation", "5").attr("result", "blur");
-            const feMergeB = glowFilterB.append("feMerge");
-            feMergeB.append("feMergeNode").attr("in", "blur");
-            feMergeB.append("feMergeNode").attr("in", "SourceGraphic");
-
             const lineGenB = d3.line()
               .x((d) => xLinear(d.price)).y((d) => yLinear(d.tax))
               .curve(d3.curveMonotoneY);
 
             rentLineG.append("path").datum(visibleB).attr("d", lineGenB)
-              .attr("fill", "none").attr("stroke", "var(--compare)")
-              .attr("stroke-width", 12).attr("opacity", 0.2).attr("filter", "url(#compare-glow)");
+              .attr("fill", "none").attr("stroke", "rgba(0,0,0,0.4)")
+              .attr("stroke-width", 6).attr("opacity", 0.5);
 
             rentLineG.append("path").datum(visibleB).attr("d", lineGenB)
               .attr("fill", "none").attr("stroke", "var(--compare)")
@@ -513,8 +496,8 @@ export default function Heatmap({
     xAxisG.selectAll(".tick line").attr("stroke", "var(--border)").attr("y2", 8);
 
     g.append("text").attr("x", width / 2).attr("y", height + 54)
-      .attr("text-anchor", "middle").attr("fill", "var(--text)")
-      .attr("font-size", "15px").attr("font-weight", "600").text("Home Price");
+      .attr("text-anchor", "middle").attr("fill", "var(--text-muted)")
+      .attr("font-size", "13px").attr("font-weight", "500").text("Home Price");
 
     // Y axis
     const yTickValues = niceTicksForBand(taxes);
@@ -528,8 +511,8 @@ export default function Heatmap({
 
     g.append("text").attr("transform", "rotate(-90)")
       .attr("x", -height / 2).attr("y", -75)
-      .attr("text-anchor", "middle").attr("fill", "var(--text)")
-      .attr("font-size", "15px").attr("font-weight", "600").text("Annual Property Tax");
+      .attr("text-anchor", "middle").attr("fill", "var(--text-muted)")
+      .attr("font-size", "13px").attr("font-weight", "500").text("Annual Property Tax");
 
     // Color legend
     const legendWidth = 16;
@@ -557,7 +540,7 @@ export default function Heatmap({
       .text(modeLabels[valueMode] || "$/mo");
 
     legendG.append("rect").attr("width", legendWidth).attr("height", legendHeight)
-      .attr("rx", 8).style("fill", "url(#legend-gradient)");
+      .attr("rx", 4).style("fill", "url(#legend-gradient)");
 
     const legendFmt = (d) => {
       if (d >= 1e6) return `$${(d / 1e6).toFixed(1)}M`;
@@ -648,6 +631,9 @@ export default function Heatmap({
     <div className="heatmap-container" ref={containerRef}>
       <svg ref={svgRef}></svg>
       <div className="tooltip" ref={tooltipRef}></div>
+      {pinnedCells.length === 0 && (
+        <div className="heatmap-hint">Click a cell to pin it for comparison</div>
+      )}
     </div>
   );
 }

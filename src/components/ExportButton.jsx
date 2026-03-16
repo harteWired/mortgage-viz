@@ -1,3 +1,24 @@
+function inlineCSSVars(clone, source) {
+  const computed = getComputedStyle(source);
+  const walk = (cloneEl, srcEl) => {
+    if (cloneEl.nodeType !== 1) return;
+    const attrs = ["fill", "stroke", "color", "stop-color"];
+    for (const attr of attrs) {
+      const val = cloneEl.getAttribute(attr);
+      if (val && val.startsWith("var(")) {
+        const prop = val.match(/var\(([^)]+)\)/)?.[1];
+        if (prop) cloneEl.setAttribute(attr, computed.getPropertyValue(prop).trim());
+      }
+    }
+    const children = cloneEl.children;
+    const srcChildren = srcEl.children;
+    for (let i = 0; i < children.length && i < srcChildren.length; i++) {
+      walk(children[i], srcChildren[i]);
+    }
+  };
+  walk(clone, source);
+}
+
 export default function ExportButton({ containerSelector }) {
   const handleExport = async () => {
     const container = document.querySelector(containerSelector);
@@ -12,7 +33,10 @@ export default function ExportButton({ containerSelector }) {
 
     // Inline computed styles for export
     clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-    clone.style.background = "#08081a";
+    clone.style.background = "#0f1419";
+
+    // Resolve CSS custom properties so exported SVG renders correctly
+    inlineCSSVars(clone, svg);
 
     const svgData = new XMLSerializer().serializeToString(clone);
     const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
@@ -27,7 +51,7 @@ export default function ExportButton({ containerSelector }) {
 
     const img = new Image();
     img.onload = () => {
-      ctx.fillStyle = "#08081a";
+      ctx.fillStyle = "#0f1419";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, width, height);
       URL.revokeObjectURL(url);

@@ -74,9 +74,9 @@ export default function AmortizationChart({ params, selectedCell }) {
       .attr("stroke-dasharray", "2,4");
 
     const colors = {
-      balance: "#e94560",
-      equity: "#00e5ff",
-      interest: "#f0a030",
+      balance: "#f85149",
+      equity: "#58a6ff",
+      interest: "#c9a55c",
     };
 
     const line = d3.line().x((d) => x(d.year)).curve(d3.curveMonotoneX);
@@ -137,7 +137,7 @@ export default function AmortizationChart({ params, selectedCell }) {
         .attr("stroke-dasharray", d.dash);
       row.append("text")
         .attr("x", 20).attr("y", 9)
-        .attr("fill", "var(--text-muted)").attr("font-size", "9px")
+        .attr("fill", "var(--text-muted)").attr("font-size", "10px")
         .text(d.label);
     });
   }, [yearly, params.termYears]);

@@ -201,7 +201,7 @@ export default function App() {
                 termYears: params.termYears,
                 downPaymentPct: params.downPaymentPct,
               })}>
-                Reset to defaults
+                Reset What-If
               </button>
             </div>
           )}
