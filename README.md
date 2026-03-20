@@ -1,16 +1,8 @@
 # Mortgage Viz
 
-An interactive heatmap for evaluating monthly mortgage payments across home price and property tax — built entirely through AI-native development with Claude.
+What does this house actually cost per month? Not the Zillow estimate, not the lender's napkin math — the real number, with tax and insurance and PMI and HOA all baked in, across a grid of prices and tax amounts so you can see the full landscape at once.
 
 ![License](https://img.shields.io/github/license/aes87/mortgage-viz?style=flat) ![Deploy](https://img.shields.io/github/actions/workflow/status/aes87/mortgage-viz/deploy.yml?label=deploy&style=flat)
-
-## The Story
-
-Years ago — first-time home buyer, no idea what I was doing — I built a MATLAB tool to brute-force the question every buyer wrestles with: *what does this actually cost me per month?* Not the Zillow estimate, not the lender's optimistic napkin math. The real number, with tax and insurance and PMI and HOA all baked in, across a grid of prices and tax amounts so I could see the full landscape at once.
-
-That tool worked. Helped me buy a house. Then it sat on a hard drive and collected dust.
-
-This is that tool rebuilt from scratch — React, D3, warm vintage infographic theme — as an exercise in AI-native design. Every line of code, every component, every CSS variable was written in collaboration with Claude. The original took a weekend of MATLAB wrangling. This one took a conversation.
 
 **[Try it live →](https://aes87.github.io/mortgage-viz/)**
 
@@ -70,16 +62,9 @@ src/
     └── index.css           # Vintage infographic theme (CSS custom properties)
 ```
 
-## The AI-Native Angle
+## Background
 
-This project is a proof of concept for a workflow — not a framework, not a library, a way of working. The entire codebase was built through iterative conversation with Claude:
-
-- **Architecture decisions** — component boundaries, state management patterns, what goes in utils vs. components
-- **D3 integration** — the fiddly bits of making D3's imperative rendering play nice with React's declarative model
-- **Visual design** — palette selection, typography hierarchy, the shift from dark finance terminal to warm editorial infographic
-- **Review and revision** — three parallel agents reviewed aesthetics, usability, and utility, then their feedback was synthesized into a second pass
-
-The MATLAB original was a single-purpose grid calculator. This version has five interactive modes, touch support, URL persistence, PNG export, and a coherent design language. The delta isn't about AI being faster — it's about AI being a viable design partner for the full stack, from calculation logic to color theory.
+Rebuilt from a MATLAB tool I wrote as a first-time buyer — same brute-force grid approach, new stack. The original took a weekend of MATLAB wrangling and helped me buy a house. Then it sat on a hard drive for years. This version was built entirely through iterative conversation with Claude — architecture, D3 integration, visual design, the works. Three parallel review agents handled aesthetics, usability, and utility before a second pass synthesized their feedback.
 
 ## Configuration
 
