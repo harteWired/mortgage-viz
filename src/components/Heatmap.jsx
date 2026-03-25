@@ -1,8 +1,6 @@
 import { useRef, useEffect, useMemo, useState, useCallback } from "react";
 import * as d3 from "d3";
-import { generateHeatmapData, linspace, rentBoundaryPoints, calcBreakdown, calcTotalMonthly, calcDTI, getDTIBand } from "../utils/mortgage";
-
-const GRID_STEPS = 30;
+import { rentBoundaryPoints, calcTotalMonthly, calcDTI, getDTIBand } from "../utils/mortgage";
 const MARGIN_DESKTOP = { top: 24, right: 90, bottom: 70, left: 100 };
 const MARGIN_MOBILE = { top: 16, right: 50, bottom: 50, left: 60 };
 
@@ -109,6 +107,9 @@ const DTI_COLORS = {
 
 export default function Heatmap({
   params,
+  data,
+  prices,
+  taxes,
   valueMode = "monthly",
   showAffordability = false,
   grossIncome = 100000,
@@ -130,21 +131,6 @@ export default function Heatmap({
     observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, []);
-
-  const prices = useMemo(
-    () => linspace(params.priceMin, params.priceMax, GRID_STEPS),
-    [params.priceMin, params.priceMax],
-  );
-
-  const taxes = useMemo(
-    () => linspace(params.taxMin, params.taxMax, GRID_STEPS),
-    [params.taxMin, params.taxMax],
-  );
-
-  const data = useMemo(
-    () => generateHeatmapData(params, prices, taxes, valueMode),
-    [params, prices, taxes, valueMode],
-  );
 
   const boundaryPoints = useMemo(
     () =>
@@ -246,19 +232,22 @@ export default function Heatmap({
 
     // Affordability overlay
     if (showAffordability) {
-      const affG = g.append("g").attr("class", "affordability-overlay").style("pointer-events", "none");
-      allCells.each(function (d) {
+      const affData = data.filter((d) => {
         const dti = calcDTI(d.payment, grossMonthly);
         const band = getDTIBand(dti);
-        if (band && band.color !== "comfortable") {
-          affG.append("rect")
-            .attr("x", x(String(d.price)))
-            .attr("y", y(String(d.tax)))
-            .attr("width", bw).attr("height", bh)
-            .attr("fill", DTI_COLORS[band.color])
-            .attr("rx", 1);
-        }
+        return band && band.color !== "comfortable";
       });
+      const affG = g.append("g").attr("class", "affordability-overlay").style("pointer-events", "none");
+      affG.selectAll("rect").data(affData, (d) => `${d.price}-${d.tax}`).join("rect")
+        .attr("x", (d) => x(String(d.price)))
+        .attr("y", (d) => y(String(d.tax)))
+        .attr("width", bw).attr("height", bh)
+        .attr("fill", (d) => {
+          const dti = calcDTI(d.payment, grossMonthly);
+          const band = getDTIBand(dti);
+          return DTI_COLORS[band.color];
+        })
+        .attr("rx", 1);
     }
 
     // Compare overlay — second rent boundary line + filled zone between A and B
@@ -279,20 +268,14 @@ export default function Heatmap({
         .style("pointer-events", "none").text(idx + 1);
     });
 
-    // Build tooltip content
+    // Build tooltip content (uses breakdown fields stored in cell data)
     function buildTooltipHTML(d) {
-      const b = calcBreakdown({
-        homePrice: d.price, downPaymentPct: params.downPaymentPct,
-        annualRate: params.annualRate, termYears: params.termYears,
-        annualTax: d.tax, insuranceRate: params.insuranceRate,
-        monthlyHOA: params.monthlyHOA,
-      });
       let rows =
-        `<span>P&amp;I</span><span>${fmtFull(b.pi)}</span>` +
-        `<span>Tax</span><span>${fmtFull(b.tax)}</span>` +
-        `<span>Insurance</span><span>${fmtFull(b.insurance)}</span>`;
-      if (b.hoa > 0) rows += `<span>HOA</span><span>${fmtFull(b.hoa)}</span>`;
-      if (b.pmi > 0) rows += `<span>PMI</span><span>${fmtFull(b.pmi)}</span>`;
+        `<span>P&amp;I</span><span>${fmtFull(d.pi)}</span>` +
+        `<span>Tax</span><span>${fmtFull(d.monthlyTax)}</span>` +
+        `<span>Insurance</span><span>${fmtFull(d.insurance)}</span>`;
+      if (d.hoa > 0) rows += `<span>HOA</span><span>${fmtFull(d.hoa)}</span>`;
+      if (d.pmi > 0) rows += `<span>PMI</span><span>${fmtFull(d.pmi)}</span>`;
 
       const priceLabel = d.price >= 1000000
         ? `$${(d.price / 1e6).toFixed(1)}M`
@@ -300,7 +283,7 @@ export default function Heatmap({
 
       let extra = "";
       if (showAffordability) {
-        const dti = calcDTI(b.total, grossMonthly);
+        const dti = calcDTI(d.total, grossMonthly);
         const band = getDTIBand(dti);
         extra = `<div class="tooltip-dti ${band.color}">DTI: ${(dti * 100).toFixed(1)}% — ${band.label}</div>`;
       }
@@ -308,9 +291,9 @@ export default function Heatmap({
       if (compareParams) {
         const fullB = { ...params, ...compareParams };
         const bPayment = calcTotalMonthly({ homePrice: d.price, downPaymentPct: fullB.downPaymentPct, annualRate: fullB.annualRate, termYears: fullB.termYears, annualTax: d.tax, insuranceRate: fullB.insuranceRate, monthlyHOA: fullB.monthlyHOA });
-        const diff = b.total - bPayment;
-        const sign = diff >= 0 ? "+" : "";
-        extra += `<div class="tooltip-diff"><span class="tooltip-diff-label">A</span> ${fmtFull(b.total)}/mo &nbsp; <span class="tooltip-diff-label b">B</span> ${fmtFull(bPayment)}/mo &nbsp; <span class="tooltip-diff-delta ${diff >= 0 ? "pos" : "neg"}">${sign}${fmtFull(diff)}</span></div>`;
+        const diff = d.total - bPayment;
+        const sign = diff >= 0 ? "+" : "-";
+        extra += `<div class="tooltip-diff"><span class="tooltip-diff-label">A</span> ${fmtFull(d.total)}/mo &nbsp; <span class="tooltip-diff-label b">B</span> ${fmtFull(bPayment)}/mo &nbsp; <span class="tooltip-diff-delta ${diff >= 0 ? "pos" : "neg"}">${sign}${fmtFull(Math.abs(diff))}</span></div>`;
       }
 
       const modeLabel = valueMode === "totalCost" ? "Total cost" : valueMode === "totalInterest" ? "Total interest" : "Monthly";
@@ -392,40 +375,42 @@ export default function Heatmap({
 
         const rentLineG = g.append("g").attr("clip-path", "url(#chart-clip)");
 
+        // Compute visibleB once for reuse in zone fill and line drawing
+        const visibleB = isComparing
+          ? compareBoundaryPoints.filter(
+              (d) => d.price >= prices[0] && d.price <= prices[prices.length - 1],
+            )
+          : [];
+
         // Filled zone between A and B when comparing
-        if (isComparing) {
-          const visibleB = compareBoundaryPoints.filter(
-            (d) => d.price >= prices[0] && d.price <= prices[prices.length - 1],
-          );
-          if (visibleB.length >= 2) {
-            // Build paired data for the area fill — match by tax value
-            const bByTax = new Map(visibleB.map((p) => [p.tax, p.price]));
-            const paired = [];
-            for (const p of visiblePoints) {
-              const bPrice = bByTax.get(p.tax);
-              if (bPrice !== undefined) {
-                paired.push({ tax: p.tax, priceA: p.price, priceB: bPrice });
-              }
+        if (isComparing && visibleB.length >= 2) {
+          // Define gradient BEFORE the path that references it
+          const zoneGrad = defs.append("linearGradient").attr("id", "compare-zone-gradient")
+            .attr("x1", "0%").attr("y1", "0%").attr("x2", "100%").attr("y2", "0%");
+          zoneGrad.append("stop").attr("offset", "0%").attr("stop-color", "var(--rent)").attr("stop-opacity", 0.6);
+          zoneGrad.append("stop").attr("offset", "50%").attr("stop-color", "#fff").attr("stop-opacity", 0.15);
+          zoneGrad.append("stop").attr("offset", "100%").attr("stop-color", "var(--compare)").attr("stop-opacity", 0.6);
+
+          // Build paired data for the area fill — match by tax value
+          const bByTax = new Map(visibleB.map((p) => [p.tax, p.price]));
+          const paired = [];
+          for (const p of visiblePoints) {
+            const bPrice = bByTax.get(p.tax);
+            if (bPrice !== undefined) {
+              paired.push({ tax: p.tax, priceA: p.price, priceB: bPrice });
             }
+          }
 
-            if (paired.length >= 2) {
-              const areaGen = d3.area()
-                .x0((d) => xLinear(d.priceA))
-                .x1((d) => xLinear(d.priceB))
-                .y((d) => yLinear(d.tax))
-                .curve(d3.curveMonotoneY);
+          if (paired.length >= 2) {
+            const areaGen = d3.area()
+              .x0((d) => xLinear(d.priceA))
+              .x1((d) => xLinear(d.priceB))
+              .y((d) => yLinear(d.tax))
+              .curve(d3.curveMonotoneY);
 
-              rentLineG.append("path").datum(paired).attr("d", areaGen)
-                .attr("fill", "url(#compare-zone-gradient)")
-                .attr("opacity", 0.2);
-
-              // Gradient for the zone fill
-              const zoneGrad = defs.append("linearGradient").attr("id", "compare-zone-gradient")
-                .attr("x1", "0%").attr("y1", "0%").attr("x2", "100%").attr("y2", "0%");
-              zoneGrad.append("stop").attr("offset", "0%").attr("stop-color", "var(--rent)").attr("stop-opacity", 0.6);
-              zoneGrad.append("stop").attr("offset", "50%").attr("stop-color", "#fff").attr("stop-opacity", 0.15);
-              zoneGrad.append("stop").attr("offset", "100%").attr("stop-color", "var(--compare)").attr("stop-opacity", 0.6);
-            }
+            rentLineG.append("path").datum(paired).attr("d", areaGen)
+              .attr("fill", "url(#compare-zone-gradient)")
+              .attr("opacity", 0.2);
           }
         }
 
@@ -487,33 +472,28 @@ export default function Heatmap({
         }
 
         // Scenario B rent boundary line
-        if (isComparing) {
-          const visibleB = compareBoundaryPoints.filter(
-            (d) => d.price >= prices[0] && d.price <= prices[prices.length - 1],
-          );
-          if (visibleB.length >= 2) {
-            const lineGenB = d3.line()
-              .x((d) => xLinear(d.price)).y((d) => yLinear(d.tax))
-              .curve(d3.curveMonotoneY);
+        if (isComparing && visibleB.length >= 2) {
+          const lineGenB = d3.line()
+            .x((d) => xLinear(d.price)).y((d) => yLinear(d.tax))
+            .curve(d3.curveMonotoneY);
 
-            rentLineG.append("path").datum(visibleB).attr("d", lineGenB)
-              .attr("fill", "none").attr("stroke", "rgba(0,0,0,0.4)")
-              .attr("stroke-width", 6).attr("opacity", 0.5);
+          rentLineG.append("path").datum(visibleB).attr("d", lineGenB)
+            .attr("fill", "none").attr("stroke", "rgba(0,0,0,0.4)")
+            .attr("stroke-width", 6).attr("opacity", 0.5);
 
-            rentLineG.append("path").datum(visibleB).attr("d", lineGenB)
-              .attr("fill", "none").attr("stroke", "var(--compare)")
-              .attr("stroke-width", 2.5).attr("stroke-linecap", "round")
-              .attr("stroke-dasharray", "8,4");
+          rentLineG.append("path").datum(visibleB).attr("d", lineGenB)
+            .attr("fill", "none").attr("stroke", "var(--compare)")
+            .attr("stroke-width", 2.5).attr("stroke-linecap", "round")
+            .attr("stroke-dasharray", "8,4");
 
-            const lpB = findLabelPos(visibleB, xLinear, yLinear, width, height);
-            if (lpB) {
-              applyTextHalo(
-                rentLineG.append("text")
-                  .attr("x", lpB.x).attr("y", lpB.y + 22)
-                  .attr("fill", "var(--compare)").attr("font-size", "14px").attr("font-weight", "700")
-                  .text("B — What if?"),
-              );
-            }
+          const lpB = findLabelPos(visibleB, xLinear, yLinear, width, height);
+          if (lpB) {
+            applyTextHalo(
+              rentLineG.append("text")
+                .attr("x", lpB.x).attr("y", lpB.y + 22)
+                .attr("fill", "var(--compare)").attr("font-size", "14px").attr("font-weight", "700")
+                .text("B — What if?"),
+            );
           }
         }
       }
@@ -677,6 +657,3 @@ export default function Heatmap({
     </div>
   );
 }
-
-// Re-export data generator for SummaryStats
-export { generateHeatmapData };

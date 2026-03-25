@@ -19,26 +19,26 @@ export default function AmortizationChart({ params, selectedCell }) {
     });
   }, [selectedCell, params]);
 
-  // Aggregate to yearly
+  // Aggregate to yearly (single O(n) pass)
   const yearly = useMemo(() => {
     if (!schedule.length) return [];
-    const years = [];
-    for (let y = 1; y <= params.termYears; y++) {
-      const months = schedule.filter((m) => m.year === y);
-      years.push({
-        year: y,
-        principal: d3.sum(months, (m) => m.principal),
-        interest: d3.sum(months, (m) => m.interest),
-        tax: d3.sum(months, (m) => m.tax),
-        insurance: d3.sum(months, (m) => m.insurance),
-        hoa: d3.sum(months, (m) => m.hoa),
-        pmi: d3.sum(months, (m) => m.pmi),
-        balance: months[months.length - 1].balance,
-        totalEquity: months[months.length - 1].totalEquity,
-        totalInterest: months[months.length - 1].totalInterest,
-      });
+    const buckets = Array.from({ length: params.termYears }, (_, i) => ({
+      year: i + 1, principal: 0, interest: 0, tax: 0, insurance: 0, hoa: 0, pmi: 0,
+      balance: 0, totalEquity: 0, totalInterest: 0,
+    }));
+    for (const m of schedule) {
+      const b = buckets[m.year - 1];
+      b.principal += m.principal;
+      b.interest += m.interest;
+      b.tax += m.tax;
+      b.insurance += m.insurance;
+      b.hoa += m.hoa;
+      b.pmi += m.pmi;
+      b.balance = m.balance;
+      b.totalEquity = m.totalEquity;
+      b.totalInterest = m.totalInterest;
     }
-    return years;
+    return buckets;
   }, [schedule, params.termYears]);
 
   useEffect(() => {
@@ -170,7 +170,7 @@ export default function AmortizationChart({ params, selectedCell }) {
         {lastYear && (
           <div className="amort-stats">
             <span>Total interest: <strong>{fmt(lastYear.totalInterest)}</strong></span>
-            <span>Total paid: <strong>{fmt(lastYear.totalInterest + selectedCell.price * (1 - params.downPaymentPct))}</strong></span>
+            <span>Total paid: <strong>{fmt(d3.sum(schedule, (m) => m.totalPayment))}</strong></span>
           </div>
         )}
       </div>

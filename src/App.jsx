@@ -4,10 +4,11 @@ import Heatmap from "./components/Heatmap";
 import TabBar from "./components/TabBar";
 import AmortizationChart from "./components/AmortizationChart";
 import AffordabilityControls from "./components/AffordabilityControls";
+import CompareControls from "./components/CompareControls";
 import SummaryStats from "./components/SummaryStats";
 import ExportButton from "./components/ExportButton";
-import { generateHeatmapData, linspace } from "./utils/mortgage";
-import { decodeParams, pushState } from "./utils/urlState";
+import { generateHeatmapData, linspace, GRID_STEPS } from "./utils/mortgage";
+import { decodeParams, replaceState } from "./utils/urlState";
 import "./styles/index.css";
 
 const DEFAULT_PARAMS = {
@@ -23,8 +24,6 @@ const DEFAULT_PARAMS = {
   taxMax: 15000,
 };
 
-const GRID_STEPS = 30;
-
 export default function App() {
   // Load initial state from URL
   const initial = useMemo(() => {
@@ -35,7 +34,7 @@ export default function App() {
   const [params, setParams] = useState(initial.params);
   const [activeTab, setActiveTab] = useState(initial.extra.activeTab || "payment");
   const [valueMode, setValueMode] = useState(initial.extra.valueMode || "monthly");
-  const [grossIncome, setGrossIncome] = useState(initial.extra.grossIncome || 100000);
+  const [grossIncome, setGrossIncome] = useState(initial.extra.grossIncome ?? 100000);
 
   // Scenario B overrides for compare tab (only the fields that differ from A)
   const [compareOverrides, setCompareOverrides] = useState(() => ({
@@ -72,23 +71,10 @@ export default function App() {
   // Selected cell for amortization
   const [selectedCell, setSelectedCell] = useState(null);
 
-  // Sync state to URL
+  // Sync state to URL (replaceState — no history entries per slider drag)
   useEffect(() => {
-    pushState(params, { activeTab, valueMode, grossIncome });
+    replaceState(params, { activeTab, valueMode, grossIncome });
   }, [params, activeTab, valueMode, grossIncome]);
-
-  // Handle popstate for back/forward
-  useEffect(() => {
-    const onPop = () => {
-      const { params: p, extra } = decodeParams(window.location.search, DEFAULT_PARAMS);
-      setParams(p);
-      if (extra.activeTab) setActiveTab(extra.activeTab);
-      if (extra.valueMode) setValueMode(extra.valueMode);
-      if (extra.grossIncome) setGrossIncome(extra.grossIncome);
-    };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, []);
 
   const handleCellClick = useCallback((cell) => {
     // For amortization tab, select cell
@@ -181,75 +167,16 @@ export default function App() {
             <AffordabilityControls grossIncome={grossIncome} onChange={setGrossIncome} />
           )}
           {activeTab === "compare" && (
-            <div className="compare-controls">
-              <h2>What if?</h2>
-              <p className="compare-hint">Adjust to see a second break-even line on the heatmap</p>
-
-              <label>
-                <span>Interest Rate</span>
-                <div className="input-row">
-                  <input type="range" min="1" max="12" step="0.125"
-                    value={compareOverrides.annualRate * 100}
-                    onChange={(e) => updateOverride("annualRate", parseFloat(e.target.value) / 100)} />
-                  <input type="number" className="value-input compare-value-input" min={1} max={12} step={0.125}
-                    value={(compareOverrides.annualRate * 100).toFixed(2)}
-                    onChange={(e) => {
-                      const v = parseFloat(e.target.value);
-                      if (!isNaN(v)) updateOverride("annualRate", Math.max(0.01, Math.min(0.12, v / 100)));
-                    }} />
-                  <span className="value-unit compare-unit">%</span>
-                </div>
-                {compareOverrides.annualRate !== params.annualRate && (
-                  <span className="compare-delta">
-                    {compareOverrides.annualRate > params.annualRate ? "+" : ""}
-                    {((compareOverrides.annualRate - params.annualRate) * 100).toFixed(2)}% vs current
-                  </span>
-                )}
-              </label>
-
-              <fieldset className="term-fieldset">
-                <legend>Loan Term</legend>
-                <div className="term-buttons compare-term-buttons">
-                  {[15, 30].map((t) => (
-                    <button key={t} className={compareOverrides.termYears === t ? "active" : ""}
-                      onClick={() => updateOverride("termYears", t)}>{t} yr</button>
-                  ))}
-                </div>
-              </fieldset>
-
-              <label>
-                <span>Down Payment</span>
-                <div className="input-row">
-                  <input type="range" min="0" max="50" step="1"
-                    value={compareOverrides.downPaymentPct * 100}
-                    onChange={(e) => updateOverride("downPaymentPct", parseFloat(e.target.value) / 100)} />
-                  <span className="value compare-value">{(compareOverrides.downPaymentPct * 100).toFixed(0)}%</span>
-                </div>
-                {compareOverrides.downPaymentPct !== params.downPaymentPct && (
-                  <span className="compare-delta">
-                    {compareOverrides.downPaymentPct > params.downPaymentPct ? "+" : ""}
-                    {((compareOverrides.downPaymentPct - params.downPaymentPct) * 100).toFixed(0)}% vs current
-                  </span>
-                )}
-              </label>
-
-              <div className="compare-legend">
-                <div className="compare-legend-item">
-                  <span className="compare-legend-line a"></span> Current scenario
-                </div>
-                <div className="compare-legend-item">
-                  <span className="compare-legend-line b"></span> What if scenario
-                </div>
-              </div>
-
-              <button className="reset-btn" onClick={() => setCompareOverrides({
+            <CompareControls
+              compareOverrides={compareOverrides}
+              params={params}
+              onChange={updateOverride}
+              onReset={() => setCompareOverrides({
                 annualRate: Math.max(0.01, params.annualRate - 0.01),
                 termYears: params.termYears,
                 downPaymentPct: params.downPaymentPct,
-              })}>
-                Reset What-If
-              </button>
-            </div>
+              })}
+            />
           )}
         </div>
 
@@ -272,6 +199,9 @@ export default function App() {
           <div className="tab-content" key={tabKey}>
             <Heatmap
               params={params}
+              data={heatmapData}
+              prices={prices}
+              taxes={taxes}
               valueMode={valueMode}
               showAffordability={showAffordability}
               grossIncome={grossIncome}

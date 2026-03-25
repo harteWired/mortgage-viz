@@ -1,6 +1,8 @@
 /** Annual PMI rate as a fraction of loan amount (typical for good credit, LTV > 80%). */
 export const PMI_RATE = 0.005;
 
+export const GRID_STEPS = 30;
+
 export function calcMonthlyPI(principal, annualRate, termYears) {
   if (principal <= 0) return 0;
   if (annualRate === 0) return principal / (termYears * 12);
@@ -54,15 +56,21 @@ export function generateHeatmapData(params, prices, taxes, mode = "monthly") {
   for (const tax of taxes) {
     for (const price of prices) {
       const args = { ...params, homePrice: price, annualTax: tax };
+      const breakdown = calcBreakdown(args);
       let value;
       if (mode === "totalCost") {
         value = calcTotalCost(args);
       } else if (mode === "totalInterest") {
         value = calcTotalInterest(price, params.downPaymentPct, params.annualRate, params.termYears);
       } else {
-        value = calcTotalMonthly(args);
+        value = breakdown.total;
       }
-      data.push({ price, tax, payment: value });
+      data.push({
+        price, tax, payment: value,
+        pi: breakdown.pi, monthlyTax: breakdown.tax,
+        insurance: breakdown.insurance, hoa: breakdown.hoa,
+        pmi: breakdown.pmi, total: breakdown.total,
+      });
     }
   }
   return data;

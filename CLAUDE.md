@@ -96,3 +96,5 @@ mortgage-viz/
 3. Open the URL shown in terminal (usually http://localhost:5173)
 4. The heatmap should render immediately with default parameter values
 5. Run `npx playwright test` to verify no regressions
+6. After significant work, update the vault project note at `/workspace/projects/obsidian-vault/vault/projects/mortgage-viz.md` (log entry, status, next-action)
+7. Use `/compress` before ending a session to save decisions, fixes, and follow-ups to the vault

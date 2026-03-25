@@ -57,7 +57,7 @@ export function decodeParams(search, defaults) {
   return { params, extra };
 }
 
-export function pushState(params, extra = {}) {
+export function replaceState(params, extra = {}) {
   const encoded = encodeParams(params, extra);
   const url = `${window.location.pathname}?${encoded}`;
   window.history.replaceState(null, "", url);
