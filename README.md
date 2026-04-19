@@ -28,15 +28,7 @@ Open `http://localhost:5173/mortgage-viz/` — the heatmap renders immediately w
 
 ## How It Works
 
-```mermaid
-graph LR
-    Controls[Controls Panel] -->|params| App[App State]
-    App -->|params + mode| Heatmap[D3 Heatmap]
-    App -->|params + cell| Amort[Amortization Chart]
-    App -->|all state| URL[URL State]
-    Heatmap -->|click| App
-    URL -->|popstate| App
-```
+![State and render flow: Controls → App State → D3 Heatmap / Amortization Chart / URL State, with click and popstate feedback loops back into state](docs/images/data-flow.png)
 
 The controls panel feeds loan parameters into React state. D3 renders a `scaleBand` grid with a custom color interpolation — steel teal through sage to terracotta. The rent boundary is computed by solving for the home price where `totalMonthly == currentRent` at each tax level, then drawing a `d3.line` with monotone interpolation.
 
