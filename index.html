@@ -1,13 +1,56 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Mortgage Viz</title>
-    <link rel="icon" type="image/svg+xml" href="/mortgage-viz/favicon.svg" />
+
+    <title>Mortgage Viz · The real monthly, on one canvas</title>
+    <meta name="description" content="A heatmap of every plausible monthly mortgage payment across price and tax. Editorial tool for first-time buyers — by Matt Harte." />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Mortgage Viz" />
+    <meta property="og:description" content="What does this house actually cost per month? A heatmap of every plausible monthly across price and tax." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lab.mattharte.com/mortgage-viz/" />
+    <meta property="og:image" content="https://lab.mattharte.com/mortgage-viz/og-image.png" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Mortgage Viz" />
+    <meta name="twitter:description" content="What does this house actually cost per month?" />
+    <meta name="twitter:image" content="https://lab.mattharte.com/mortgage-viz/og-image.png" />
+
+    <link rel="canonical" href="https://lab.mattharte.com/mortgage-viz/" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+    <!-- Anti-FOUC: paint ink immediately so dark theme doesn't flash white. -->
+    <style>
+      :root { color-scheme: dark; }
+      html[data-theme="dark"] { background: #15151e; }
+      html[data-theme="light"] { background: #fafaf6; color-scheme: light; }
+      body { margin: 0; }
+    </style>
+
+    <!-- Theme bootstrap before paint — avoids the wrong-mode flash on reload. -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("mortgage-viz-theme");
+          if (stored === "light" || stored === "dark") {
+            document.documentElement.setAttribute("data-theme", stored);
+          } else {
+            document.documentElement.setAttribute("data-theme", "dark");
+          }
+        } catch (_) { /* localStorage may be unavailable */ }
+      })();
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
   </head>
   <body>
     <div id="root"></div>

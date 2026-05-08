@@ -5,10 +5,12 @@ const MARGIN_DESKTOP = { top: 24, right: 90, bottom: 70, left: 100 };
 const MARGIN_MOBILE = { top: 16, right: 50, bottom: 50, left: 60 };
 
 function applyTextHalo(sel) {
+  // Halo color matches the heatmap container background (ink, slightly
+  // darkened) so labels read on any cell color.
   sel
     .attr("paint-order", "stroke")
-    .attr("stroke", "rgba(205, 200, 190, 0.9)")
-    .attr("stroke-width", 5)
+    .attr("stroke", "rgba(20, 20, 30, 0.85)")
+    .attr("stroke-width", 4)
     .attr("stroke-linejoin", "round");
 }
 
@@ -69,17 +71,19 @@ function oklchToRgb(L, C, H) {
   return `rgb(${clamp(rl)},${clamp(gl)},${clamp(bl)})`;
 }
 
-// Perceptually uniform palette — interpolates in OKLCH, outputs rgb for D3
-// Cool teal → sage green → warm gold → terracotta → deep rust
+// Editorial palette ramp — interpolates in OKLCH, outputs rgb for D3.
+// sage (cool) → ember (signature) → clay (warm). Anchored to portfolio
+// shell tokens so the heatmap belongs to the same visual language as
+// the rest of lab.mattharte.com.
 function mortgagePalette(t) {
   const stops = [
-    [0.00, [0.44, 0.06, 220]],  // deep teal
-    [0.15, [0.50, 0.06, 195]],  // muted teal-green
-    [0.35, [0.58, 0.07, 145]],  // sage green
-    [0.55, [0.68, 0.08, 85]],   // warm gold
-    [0.75, [0.58, 0.11, 55]],   // terracotta
-    [0.90, [0.48, 0.13, 35]],   // burnt sienna
-    [1.00, [0.40, 0.13, 25]],   // deep rust
+    [0.00, [0.78, 0.12, 175]],  // sage — pale
+    [0.20, [0.72, 0.12, 165]],  // sage proper (--color-sage)
+    [0.40, [0.74, 0.13, 110]],  // sage→ember bridge, warm-yellow
+    [0.55, [0.78, 0.14, 55]],   // ember (--color-ember)
+    [0.75, [0.66, 0.14, 42]],   // ember→clay
+    [0.90, [0.59, 0.13, 35]],   // clay (--color-clay)
+    [1.00, [0.46, 0.13, 28]],   // deep clay
   ];
   let i = 0;
   while (i < stops.length - 2 && stops[i + 1][0] < t) i++;
@@ -98,11 +102,13 @@ function mortgagePalette(t) {
   return oklchToRgb(L, C, H);
 }
 
+// DTI overlay tints — editorial state palette (fern/saffron/clay/garnet).
+// Comfortable is fully transparent so green doesn't dominate the grid.
 const DTI_COLORS = {
-  comfortable: "rgba(92, 122, 77, 0.0)",
-  stretching: "rgba(176, 141, 87, 0.2)",
-  maximum: "rgba(184, 90, 56, 0.25)",
-  overlimit: "rgba(139, 69, 52, 0.35)",
+  comfortable: "rgba(63, 122, 74, 0.0)",
+  stretching:  "rgba(232, 181, 62, 0.20)",
+  maximum:     "rgba(184, 108, 74, 0.25)",
+  overlimit:   "rgba(188, 64, 54, 0.32)",
 };
 
 export default function Heatmap({
@@ -194,10 +200,10 @@ export default function Heatmap({
     // Crosshair group
     const crosshairG = g.append("g").attr("class", "crosshair").style("pointer-events", "none");
     const crosshairV = crosshairG.append("line")
-      .attr("stroke", "rgba(46, 42, 36, 0.35)").attr("stroke-width", 1)
+      .attr("stroke", "rgba(245, 239, 224, 0.55)").attr("stroke-width", 1)
       .attr("stroke-dasharray", "3,3").attr("stroke-linecap", "round").attr("opacity", 0);
     const crosshairH = crosshairG.append("line")
-      .attr("stroke", "rgba(46, 42, 36, 0.35)").attr("stroke-width", 1)
+      .attr("stroke", "rgba(245, 239, 224, 0.55)").attr("stroke-width", 1)
       .attr("stroke-dasharray", "3,3").attr("stroke-linecap", "round").attr("opacity", 0);
 
     const fmt = (v) => {
@@ -311,7 +317,7 @@ export default function Heatmap({
     allCells
       .on("mouseenter", function (event, d) {
         d3.select(this).transition().duration(80)
-          .attr("stroke", "#2e2a24").attr("stroke-width", 2);
+          .attr("stroke", "var(--color-cream)").attr("stroke-width", 2);
 
         const cx = x(String(d.price)) + bw / 2;
         const cy = y(String(d.tax)) + bh / 2;
