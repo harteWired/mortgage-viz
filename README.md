@@ -4,7 +4,7 @@ What does this house actually cost per month? Not the Zillow estimate, not the l
 
 ![License](https://img.shields.io/github/license/harteWired/mortgage-viz?style=flat) ![Deploy](https://img.shields.io/github/actions/workflow/status/harteWired/mortgage-viz/deploy.yml?label=deploy&style=flat)
 
-**[Try it live → lab.mattharte.com/mortgage-viz](https://lab.mattharte.com/mortgage-viz/)**
+**[Try it live →](https://hartewired.github.io/mortgage-viz/)**
 
 ## What It Does
 
@@ -32,7 +32,7 @@ Open `http://localhost:5173/mortgage-viz/` — the heatmap renders immediately w
 
 ![State and render flow: Controls → App State → D3 Heatmap / Amortization Chart / URL State, with click and popstate feedback loops back into state](docs/images/data-flow.png)
 
-Loan parameters flow from the inline controls into React state. D3 renders a `scaleBand` grid with a custom OKLCH interpolation (`sage → ember → clay`) — perceptually uniform, anchored to the four-tier editorial palette that the rest of [`lab.mattharte.com`](https://lab.mattharte.com/) uses. The rent boundary is computed by solving for the home price where `totalMonthly == currentRent` at each tax level, then drawn with monotone interpolation.
+Loan parameters flow from the inline controls into React state. D3 renders a `scaleBand` grid with a custom OKLCH interpolation (`sage → ember → clay`) — perceptually uniform, anchored to the four-tier editorial palette shared with the rest of the lab. The rent boundary is computed by solving for the home price where `totalMonthly == currentRent` at each tax level, then drawn with monotone interpolation.
 
 Tabs are overlay modes — they modify the heatmap's behavior (affordability tints cells, compare adds a second boundary line) rather than replacing it. Clicking any cell smooth-scrolls to the drilldown section and pins the cell in the right rail (up to five).
 
@@ -64,18 +64,13 @@ src/
     ├── _shell.css           # portfolio-shell.css v1.1.0 (verbatim)
     ├── _app.css             # mortgage-viz-specific editorial styles
     └── index.css            # Importer
-worker/
-└── worker.js                # Cloudflare Worker (lab subdomain prefix-strip)
-gh-pages-redirect/
-└── index.html               # Meta-refresh stub for the legacy GH Pages URL
-wrangler.jsonc               # Cloudflare Worker config
 ```
 
 ## Background
 
 Rebuilt from a MATLAB tool I wrote as a first-time buyer — same brute-force grid approach, new stack. The original took a weekend of MATLAB wrangling and helped me buy a house. Then it sat on a hard drive for years.
 
-v1 was built entirely through iterative conversation with Claude — architecture, D3 integration, visual design. v2 (this version) is the editorial overhaul: re-skinned to the lab.mattharte.com palette and rebuilt as a scrollable editorial page so a cold visitor reads the thesis, sees the tool, drills into a cell, and understands the math — in that order.
+v1 was built entirely through iterative conversation with Claude — architecture, D3 integration, visual design. v2 (this version) is the editorial overhaul: re-skinned to a four-tier editorial palette and rebuilt as a scrollable editorial page so a cold visitor reads the thesis, sees the tool, drills into a cell, and understands the math — in that order.
 
 ## Configuration
 
@@ -94,7 +89,7 @@ Axis ranges (price and tax) are also configurable — useful for zooming into a 
 
 ## Tech Stack
 
-React 19 · Vite · D3.js · CSS custom properties (OKLCH) · Cloudflare Workers · GitHub Actions
+React 19 · Vite · D3.js · CSS custom properties (OKLCH) · GitHub Pages · GitHub Actions
 
 ## License
 
