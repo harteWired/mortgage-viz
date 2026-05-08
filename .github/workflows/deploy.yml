@@ -1,5 +1,12 @@
 name: Deploy to GitHub Pages
 
+# Lab migration note: the canonical home is now
+# https://lab.mattharte.com/mortgage-viz/ (Cloudflare Worker, see
+# wrangler.jsonc). This workflow keeps the old GitHub Pages URL alive
+# as a meta-refresh forwarder so external links don't 404.
+#
+# To fully decommission: disable Pages in repo Settings → Pages.
+
 on:
   push:
     branches: [main]
@@ -18,15 +25,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: gh-pages-redirect
 
   deploy:
     needs: build
