@@ -19,6 +19,13 @@ export default function AmortizationChart({ params, selectedCell }) {
     });
   }, [selectedCell, params]);
 
+  // Total paid across the full schedule — memoized so we don't reduce
+  // ~360 entries on every render of the panel header.
+  const totalPaid = useMemo(
+    () => schedule.reduce((acc, m) => acc + m.totalPayment, 0),
+    [schedule],
+  );
+
   // Aggregate to yearly (single O(n) pass)
   const yearly = useMemo(() => {
     if (!schedule.length) return [];
@@ -74,13 +81,13 @@ export default function AmortizationChart({ params, selectedCell }) {
       .attr("stroke", "var(--border-subtle)")
       .attr("stroke-dasharray", "2,4");
 
-    // Read editorial tokens off :root so the chart re-themes with
-    // light/dark mode without re-bind.
-    const css = getComputedStyle(document.documentElement);
+    // Pass var() strings straight to d3 so the SVG resolves them at
+    // paint time — chart re-themes via CSS inheritance without any
+    // JS re-execution on theme toggle.
     const colors = {
-      balance:  css.getPropertyValue("--color-ember").trim() || "#e6a562",
-      equity:   css.getPropertyValue("--color-sage").trim() || "#6fd1b4",
-      interest: css.getPropertyValue("--color-iris").trim() || "#5b4488",
+      balance:  "var(--color-ember)",
+      equity:   "var(--color-sage)",
+      interest: "var(--color-iris)",
     };
 
     const line = d3.line().x((d) => x(d.year)).curve(d3.curveMonotoneX);
@@ -157,7 +164,7 @@ export default function AmortizationChart({ params, selectedCell }) {
         {lastYear && (
           <div className="amort-stats">
             <span>Total interest <strong>{fmt(lastYear.totalInterest)}</strong></span>
-            <span>Total paid <strong>{fmt(d3.sum(schedule, (m) => m.totalPayment))}</strong></span>
+            <span>Total paid <strong>{fmt(totalPaid)}</strong></span>
           </div>
         )}
       </div>

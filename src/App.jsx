@@ -86,27 +86,37 @@ export default function App() {
   }, [params, activeTab, valueMode, grossIncome]);
 
   const handleCellClick = useCallback((cell) => {
-    setSelectedCell(cell);
-
-    // Pin behavior — same as v1 but always-on (drilldown reveals on its own)
+    let isUnpin = false;
     setPinnedCells((prev) => {
       const exists = prev.findIndex((p) => p.price === cell.price && p.tax === cell.tax);
-      if (exists >= 0) return prev.filter((_, i) => i !== exists);
+      if (exists >= 0) {
+        isUnpin = true;
+        return prev.filter((_, i) => i !== exists);
+      }
       if (prev.length >= 5) return [...prev.slice(1), cell];
       return [...prev, cell];
     });
 
-    // Smooth-scroll to drilldown so the response is visible
-    if (drilldownRef.current) {
-      // Slight delay so React renders the new cell first
-      window.requestAnimationFrame(() => {
-        drilldownRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
+    // Only set selection + scroll on add/replace. Un-pinning shouldn't
+    // jump the page to a drilldown showing the cell the user just
+    // removed.
+    if (!isUnpin) {
+      setSelectedCell(cell);
+      if (drilldownRef.current) {
+        window.requestAnimationFrame(() => {
+          drilldownRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      }
     }
   }, []);
 
   const removePin = useCallback((cell) => {
     setPinnedCells((prev) => prev.filter((p) => !(p.price === cell.price && p.tax === cell.tax)));
+    // Keep drilldown in sync — if the removed pin is what the
+    // drilldown is showing, fall back to the median cell.
+    setSelectedCell((prev) =>
+      prev && prev.price === cell.price && prev.tax === cell.tax ? null : prev,
+    );
   }, []);
 
   const clearPins = useCallback(() => {
@@ -153,13 +163,15 @@ export default function App() {
     }
   }, []);
 
-  // Median cell (for default breakdown when nothing selected)
+  // Median cell (for default breakdown when nothing selected). Depend
+  // only on the axes — pulling heatmapData into the deps would mint a
+  // fresh object every valueMode flip and bust downstream useMemo hooks.
   const medianCell = useMemo(() => {
-    if (!heatmapData.length) return null;
+    if (!prices.length || !taxes.length) return null;
     const midPrice = prices[Math.floor(prices.length / 2)];
     const midTax = taxes[Math.floor(taxes.length / 2)];
     return { price: midPrice, tax: midTax };
-  }, [heatmapData, prices, taxes]);
+  }, [prices, taxes]);
 
   const showAffordability = activeTab === "affordability";
   const compareParams = activeTab === "compare" ? compareOverrides : null;

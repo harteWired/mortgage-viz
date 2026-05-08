@@ -17,9 +17,12 @@ export default {
     const url = new URL(req.url);
 
     // Bare /mortgage-viz → redirect to /mortgage-viz/ so relative
-    // asset paths resolve correctly in the served index.html.
+    // asset paths resolve correctly in the served index.html. Carry
+    // the query string and fragment through — the app round-trips
+    // its UI state through URL params, so dropping them here would
+    // silently break shared links.
     if (url.pathname === PREFIX) {
-      return Response.redirect(url.origin + PREFIX + '/', 301);
+      return Response.redirect(url.origin + PREFIX + '/' + url.search + url.hash, 301);
     }
 
     // Strip the prefix; everything else routes to the static asset

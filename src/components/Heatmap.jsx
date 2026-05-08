@@ -5,11 +5,11 @@ const MARGIN_DESKTOP = { top: 24, right: 90, bottom: 70, left: 100 };
 const MARGIN_MOBILE = { top: 16, right: 50, bottom: 50, left: 60 };
 
 function applyTextHalo(sel) {
-  // Halo color matches the heatmap container background (ink, slightly
-  // darkened) so labels read on any cell color.
+  // Halo reads from a CSS var so it tracks the active theme — light
+  // mode flips to a cream halo, dark stays ink-toned.
   sel
     .attr("paint-order", "stroke")
-    .attr("stroke", "rgba(20, 20, 30, 0.85)")
+    .attr("stroke", "var(--text-halo)")
     .attr("stroke-width", 4)
     .attr("stroke-linejoin", "round");
 }
@@ -75,16 +75,21 @@ function oklchToRgb(L, C, H) {
 // sage (cool) → ember (signature) → clay (warm). Anchored to portfolio
 // shell tokens so the heatmap belongs to the same visual language as
 // the rest of lab.mattharte.com.
+//
+// Stops are module-level so the ~900 cells × interpolator calls per
+// render don't reallocate the array each time.
+const PALETTE_STOPS = [
+  [0.00, [0.78, 0.12, 175]],  // sage — pale
+  [0.20, [0.72, 0.12, 165]],  // sage proper (--color-sage)
+  [0.40, [0.74, 0.13, 110]],  // sage→ember bridge, warm-yellow
+  [0.55, [0.78, 0.14, 55]],   // ember (--color-ember)
+  [0.75, [0.66, 0.14, 42]],   // ember→clay
+  [0.90, [0.59, 0.13, 35]],   // clay (--color-clay)
+  [1.00, [0.46, 0.13, 28]],   // deep clay
+];
+
 function mortgagePalette(t) {
-  const stops = [
-    [0.00, [0.78, 0.12, 175]],  // sage — pale
-    [0.20, [0.72, 0.12, 165]],  // sage proper (--color-sage)
-    [0.40, [0.74, 0.13, 110]],  // sage→ember bridge, warm-yellow
-    [0.55, [0.78, 0.14, 55]],   // ember (--color-ember)
-    [0.75, [0.66, 0.14, 42]],   // ember→clay
-    [0.90, [0.59, 0.13, 35]],   // clay (--color-clay)
-    [1.00, [0.46, 0.13, 28]],   // deep clay
-  ];
+  const stops = PALETTE_STOPS;
   let i = 0;
   while (i < stops.length - 2 && stops[i + 1][0] < t) i++;
   const [t0, c0] = stops[i];
@@ -200,10 +205,10 @@ export default function Heatmap({
     // Crosshair group
     const crosshairG = g.append("g").attr("class", "crosshair").style("pointer-events", "none");
     const crosshairV = crosshairG.append("line")
-      .attr("stroke", "rgba(245, 239, 224, 0.55)").attr("stroke-width", 1)
+      .attr("stroke", "var(--crosshair-stroke)").attr("stroke-width", 1)
       .attr("stroke-dasharray", "3,3").attr("stroke-linecap", "round").attr("opacity", 0);
     const crosshairH = crosshairG.append("line")
-      .attr("stroke", "rgba(245, 239, 224, 0.55)").attr("stroke-width", 1)
+      .attr("stroke", "var(--crosshair-stroke)").attr("stroke-width", 1)
       .attr("stroke-dasharray", "3,3").attr("stroke-linecap", "round").attr("opacity", 0);
 
     const fmt = (v) => {

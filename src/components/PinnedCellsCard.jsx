@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { calcTotalMonthly } from "../utils/mortgage";
 
 const fmt = (v) => "$" + Math.round(v).toLocaleString();
@@ -5,6 +6,23 @@ const priceLabel = (p) =>
   p >= 1_000_000 ? `$${(p / 1e6).toFixed(1)}M` : `$${(p / 1000).toFixed(0)}k`;
 
 export default function PinnedCellsCard({ pinnedCells, params, onRemove, onClear }) {
+  // params changes by reference on every slider drag — memoize so we
+  // don't recompute the per-pin monthly on each frame.
+  const monthlyValues = useMemo(
+    () =>
+      pinnedCells.map((c) =>
+        calcTotalMonthly({
+          homePrice: c.price,
+          downPaymentPct: params.downPaymentPct,
+          annualRate: params.annualRate,
+          termYears: params.termYears,
+          annualTax: c.tax,
+          insuranceRate: params.insuranceRate,
+          monthlyHOA: params.monthlyHOA,
+        }),
+      ),
+    [pinnedCells, params],
+  );
   if (!pinnedCells.length) {
     return (
       <div className="module-card pinned-cells-card">
@@ -27,15 +45,7 @@ export default function PinnedCellsCard({ pinnedCells, params, onRemove, onClear
       <p className="module-card__title">Pinned · {pinnedCells.length}/5</p>
       <div className="pinned-list">
         {pinnedCells.map((c, i) => {
-          const monthly = calcTotalMonthly({
-            homePrice: c.price,
-            downPaymentPct: params.downPaymentPct,
-            annualRate: params.annualRate,
-            termYears: params.termYears,
-            annualTax: c.tax,
-            insuranceRate: params.insuranceRate,
-            monthlyHOA: params.monthlyHOA,
-          });
+          const monthly = monthlyValues[i];
           return (
             <div className="pinned-cell" key={`${c.price}-${c.tax}`}>
               <span className="pinned-cell__num">{i + 1}</span>

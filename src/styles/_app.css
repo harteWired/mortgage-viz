@@ -20,8 +20,17 @@
   --bg-control:      var(--color-bg-elevated);
   --bg-input:        var(--color-bg-elevated);
   --bg-hover:        oklch(from var(--color-fg-base) l c h / 0.06);
-  --border:          oklch(from var(--color-fg-base) l c h / 0.12);
-  --border-subtle:   oklch(from var(--color-fg-base) l c h / 0.06);
+  /* `--border` and `--border-subtle` are full border shorthands —
+     `border: var(--border-subtle)` only resolves correctly if the
+     value is "1px solid <color>" not just a color. The shell ships
+     `--border-subtle` as a shorthand; we must too. */
+  --border:          1px solid oklch(from var(--color-fg-base) l c h / 0.12);
+  --border-subtle:   1px solid oklch(from var(--color-fg-base) l c h / 0.06);
+  /* Themed crosshair + halo for the heatmap — used as raw strokes
+     in d3, no theme-aware re-render needed because CSS resolves
+     these at paint time. */
+  --crosshair-stroke: oklch(from var(--color-fg-base) l c h / 0.55);
+  --text-halo:        oklch(from var(--color-bg-base) l c h / 0.85);
   --text:            var(--color-fg-base);
   --text-muted:      var(--color-fg-muted);
   --text-dim:        var(--color-fg-subtle);

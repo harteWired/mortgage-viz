@@ -1,5 +1,3 @@
-import { useEffect, useRef } from "react";
-
 // Hand-rolled char-stagger entrance — splits the headline into
 // per-character spans so CSS can stagger them. Avoids the GSAP
 // SplitText paywall and works without GSAP at all.
@@ -34,9 +32,11 @@ function splitHeadline(text) {
   ));
 }
 
+// Headline never changes — split it once at module load.
+const HEADLINE_TEXT = "What does this house actually cost?";
+const SPLIT_HEADLINE = splitHeadline(HEADLINE_TEXT);
+
 export default function Hero({ onScrollToTool }) {
-  const headlineRef = useRef(null);
-  const headlineText = "What does this house actually cost?";
 
   // For screen readers — the split version is aria-hidden, so provide
   // a single accessible-name span.
@@ -51,9 +51,9 @@ export default function Hero({ onScrollToTool }) {
       <div className="hero__content">
         <span className="hero__overline">Mortgage Viz</span>
 
-        <h1 className="hero__headline" id="hero-headline" ref={headlineRef}>
-          <span className="sr-only">{headlineText}</span>
-          <span aria-hidden="true">{splitHeadline(headlineText)}</span>
+        <h1 className="hero__headline" id="hero-headline">
+          <span className="sr-only">{HEADLINE_TEXT}</span>
+          <span aria-hidden="true">{SPLIT_HEADLINE}</span>
         </h1>
 
         <p className="hero__subhead">
