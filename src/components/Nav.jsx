@@ -24,21 +24,28 @@ const ICONS = {
   ),
 };
 
-export default function Nav({ theme, onToggleTheme, onShare, repoUrl }) {
+export default function Nav({ theme, onToggleTheme, onShare, repoUrl, compact = false, slot = null }) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
+    if (compact) return; // Tool-mode nav doesn't react to scroll — main is the scroll container.
     const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [compact]);
 
   return (
-    <header className={`app-nav${scrolled ? " app-nav--scrolled" : ""}`}>
+    <header
+      className={
+        "app-nav" +
+        (compact ? " app-nav--compact" : "") +
+        (!compact && scrolled ? " app-nav--scrolled" : "")
+      }
+    >
       <div className="app-nav__inner">
-        <a className="app-nav__lab-link" href="https://lab.mattharte.com/">
-          mattharte<span>.com</span>/lab
+        <a className="app-nav__lab-link" href="https://mattharte.com/">
+          mattharte<span>.com</span>
         </a>
 
         <span className="app-nav__wordmark">
@@ -46,6 +53,7 @@ export default function Nav({ theme, onToggleTheme, onShare, repoUrl }) {
         </span>
 
         <div className="app-nav__actions">
+          {slot}
           <button
             className="icon-btn"
             onClick={onShare}

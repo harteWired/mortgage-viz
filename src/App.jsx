@@ -1,7 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Nav from "./components/Nav";
-import Hero from "./components/Hero";
-import Thesis from "./components/Thesis";
 import Controls from "./components/Controls";
 import Heatmap from "./components/Heatmap";
 import TabBar from "./components/TabBar";
@@ -12,8 +10,6 @@ import SummaryStats from "./components/SummaryStats";
 import ExportButton from "./components/ExportButton";
 import PinnedCellsCard from "./components/PinnedCellsCard";
 import BreakdownStack from "./components/BreakdownStack";
-import Methodology from "./components/Methodology";
-import Footer from "./components/Footer";
 import { generateHeatmapData, linspace, GRID_STEPS } from "./utils/mortgage";
 import { decodeParams, replaceState } from "./utils/urlState";
 import "./styles/index.css";
@@ -34,7 +30,7 @@ const DEFAULT_PARAMS = {
 const REPO_URL = "https://github.com/harteWired/mortgage-viz";
 
 export default function App() {
-  // Load initial state from URL
+  // Initial state from URL
   const initial = useMemo(() => {
     const { params, extra } = decodeParams(window.location.search, DEFAULT_PARAMS);
     return { params, extra };
@@ -45,24 +41,22 @@ export default function App() {
   const [valueMode, setValueMode] = useState(initial.extra.valueMode || "monthly");
   const [grossIncome, setGrossIncome] = useState(initial.extra.grossIncome ?? 100000);
 
-  // Scenario B overrides for compare tab
   const [compareOverrides, setCompareOverrides] = useState(() => ({
     annualRate: Math.max(0.01, initial.params.annualRate - 0.01),
     termYears: initial.params.termYears,
     downPaymentPct: initial.params.downPaymentPct,
   }));
 
-  // Theme — dark default for v2 editorial. Light is opt-in via toggle.
+  // Theme — dark default. Light is opt-in via toggle.
   const [theme, setTheme] = useState(() => {
     const stored = localStorage.getItem("mortgage-viz-theme");
-    if (stored === "light" || stored === "dark") return stored;
-    return "dark";
+    return stored === "light" || stored === "dark" ? stored : "dark";
   });
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("mortgage-viz-theme", theme);
   }, [theme]);
-  const toggleTheme = useCallback(() => setTheme((t) => t === "dark" ? "light" : "dark"), []);
+  const toggleTheme = useCallback(() => setTheme((t) => (t === "dark" ? "light" : "dark")), []);
 
   // Tab crossfade key
   const [tabKey, setTabKey] = useState(0);
@@ -71,16 +65,18 @@ export default function App() {
     setTabKey((k) => k + 1);
   }, []);
 
-  // Pinned cells (click-to-pin)
+  // Pinned + selected
   const [pinnedCells, setPinnedCells] = useState([]);
-  // Selected cell for amortization + breakdown
   const [selectedCell, setSelectedCell] = useState(null);
 
-  // Refs for smooth scroll-to-section
-  const toolRef = useRef(null);
-  const drilldownRef = useRef(null);
+  // Drilldown drawer (mobile/tablet — collapsed by default; full-screen modal)
+  const [drilldownOpen, setDrilldownOpen] = useState(false);
 
-  // Sync state to URL (replaceState — no history entries per slider drag)
+  // Sidebar / bottom-sheet open state for mobile
+  const [controlsOpen, setControlsOpen] = useState(() => window.innerWidth > 900);
+  const toggleControls = useCallback(() => setControlsOpen((v) => !v), []);
+
+  // URL sync
   useEffect(() => {
     replaceState(params, { activeTab, valueMode, grossIncome });
   }, [params, activeTab, valueMode, grossIncome]);
@@ -96,24 +92,13 @@ export default function App() {
       if (prev.length >= 5) return [...prev.slice(1), cell];
       return [...prev, cell];
     });
-
-    // Only set selection + scroll on add/replace. Un-pinning shouldn't
-    // jump the page to a drilldown showing the cell the user just
-    // removed.
     if (!isUnpin) {
       setSelectedCell(cell);
-      if (drilldownRef.current) {
-        window.requestAnimationFrame(() => {
-          drilldownRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
-      }
     }
   }, []);
 
   const removePin = useCallback((cell) => {
     setPinnedCells((prev) => prev.filter((p) => !(p.price === cell.price && p.tax === cell.tax)));
-    // Keep drilldown in sync — if the removed pin is what the
-    // drilldown is showing, fall back to the median cell.
     setSelectedCell((prev) =>
       prev && prev.price === cell.price && prev.tax === cell.tax ? null : prev,
     );
@@ -124,10 +109,18 @@ export default function App() {
     setSelectedCell(null);
   }, []);
 
-  // Heatmap data
-  const prices = useMemo(() => linspace(params.priceMin, params.priceMax, GRID_STEPS), [params.priceMin, params.priceMax]);
-  const taxes = useMemo(() => linspace(params.taxMin, params.taxMax, GRID_STEPS), [params.taxMin, params.taxMax]);
-  const heatmapData = useMemo(() => generateHeatmapData(params, prices, taxes, valueMode), [params, prices, taxes, valueMode]);
+  const prices = useMemo(
+    () => linspace(params.priceMin, params.priceMax, GRID_STEPS),
+    [params.priceMin, params.priceMax],
+  );
+  const taxes = useMemo(
+    () => linspace(params.taxMin, params.taxMax, GRID_STEPS),
+    [params.taxMin, params.taxMax],
+  );
+  const heatmapData = useMemo(
+    () => generateHeatmapData(params, prices, taxes, valueMode),
+    [params, prices, taxes, valueMode],
+  );
 
   const handleReset = useCallback(() => {
     setParams(DEFAULT_PARAMS);
@@ -139,14 +132,16 @@ export default function App() {
     setCompareOverrides((prev) => ({ ...prev, [key]: value }));
   }, []);
 
-  // Scroll-to-tool from hero CTA
-  const scrollToTool = useCallback(() => {
-    if (toolRef.current) {
-      toolRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, []);
+  // Median cell — fallback for breakdown when nothing is selected.
+  const medianCell = useMemo(() => {
+    if (!prices.length || !taxes.length) return null;
+    return {
+      price: prices[Math.floor(prices.length / 2)],
+      tax: taxes[Math.floor(taxes.length / 2)],
+    };
+  }, [prices, taxes]);
 
-  // Share — copy URL with copy-flash feedback
+  // Share
   const [copyFlash, setCopyFlash] = useState(false);
   const flashTimer = useRef(null);
   const handleShare = useCallback(async () => {
@@ -156,141 +151,161 @@ export default function App() {
       if (flashTimer.current) clearTimeout(flashTimer.current);
       flashTimer.current = setTimeout(() => setCopyFlash(false), 1400);
     } catch {
-      // Fallback — open share sheet if available
       if (navigator.share) {
         navigator.share({ title: "Mortgage Viz", url: window.location.href }).catch(() => {});
       }
     }
   }, []);
 
-  // Median cell (for default breakdown when nothing selected). Depend
-  // only on the axes — pulling heatmapData into the deps would mint a
-  // fresh object every valueMode flip and bust downstream useMemo hooks.
-  const medianCell = useMemo(() => {
-    if (!prices.length || !taxes.length) return null;
-    const midPrice = prices[Math.floor(prices.length / 2)];
-    const midTax = taxes[Math.floor(taxes.length / 2)];
-    return { price: midPrice, tax: midTax };
-  }, [prices, taxes]);
-
   const showAffordability = activeTab === "affordability";
   const compareParams = activeTab === "compare" ? compareOverrides : null;
+  const detailCell = selectedCell || medianCell;
 
   return (
-    <div className="app">
-      <Nav theme={theme} onToggleTheme={toggleTheme} onShare={handleShare} repoUrl={REPO_URL} />
+    <div className="app app--tool">
+      <Nav
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onShare={handleShare}
+        repoUrl={REPO_URL}
+        compact
+        slot={<ExportButton containerSelector=".heatmap-container" theme={theme} />}
+      />
 
-      <main>
-        <Hero onScrollToTool={scrollToTool} />
+      <main className={"tool-main" + (controlsOpen ? "" : " tool-main--rail-collapsed")}>
+        {controlsOpen && <div className="sheet-backdrop" onClick={toggleControls} />}
 
-        <Thesis />
+        <aside className={`tool-rail tool-rail--left${controlsOpen ? "" : " collapsed"}`}>
+          <button
+            className="sheet-handle"
+            onClick={toggleControls}
+            aria-label={controlsOpen ? "Collapse inputs" : "Expand inputs"}
+          >
+            <span className="sheet-handle-label">
+              Inputs
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d={controlsOpen ? "M3 5 L6 8 L9 5" : "M3 7 L6 4 L9 7"} />
+              </svg>
+            </span>
+          </button>
+          <div className="tool-rail__scroll">
+            <Controls
+              params={params}
+              onChange={setParams}
+              onReset={handleReset}
+              valueMode={valueMode}
+              onValueModeChange={setValueMode}
+            />
+            {showAffordability && (
+              <AffordabilityControls grossIncome={grossIncome} onChange={setGrossIncome} />
+            )}
+            {activeTab === "compare" && (
+              <CompareControls
+                compareOverrides={compareOverrides}
+                params={params}
+                onChange={updateOverride}
+                onReset={() =>
+                  setCompareOverrides({
+                    annualRate: Math.max(0.01, params.annualRate - 0.01),
+                    termYears: params.termYears,
+                    downPaymentPct: params.downPaymentPct,
+                  })
+                }
+              />
+            )}
+          </div>
+        </aside>
 
-        <section className="heatmap-section" id="tool" ref={toolRef}>
-          <div className="heatmap-section__inner">
-            <div className="heatmap-section__header">
-              <div>
-                <p className="heatmap-section__overline">The grid</p>
-                <h2 className="heatmap-section__title">
-                  Every plausible <em>monthly</em>, on one canvas
-                </h2>
-              </div>
-              <div className="heatmap-section__actions">
-                <ExportButton containerSelector=".heatmap-container" theme={theme} />
-              </div>
-            </div>
+        <button
+          className="rail-toggle rail-toggle--left"
+          onClick={toggleControls}
+          aria-label={controlsOpen ? "Collapse inputs" : "Expand inputs"}
+          title={controlsOpen ? "Collapse inputs" : "Expand inputs"}
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <path
+              d={controlsOpen ? "M10 3 L5 8 L10 13" : "M6 3 L11 8 L6 13"}
+              stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+            />
+          </svg>
+        </button>
 
+        <section className="tool-center">
+          <div className="tool-center__topbar">
             <TabBar active={activeTab} onChange={handleTabChange} />
-
-            <div className="heatmap-layout">
-              <div className="heatmap-main">
-                <SummaryStats data={heatmapData} valueMode={valueMode} />
-
-                <div className="tab-content" key={tabKey}>
-                  <Heatmap
-                    params={params}
-                    data={heatmapData}
-                    prices={prices}
-                    taxes={taxes}
-                    valueMode={valueMode}
-                    showAffordability={showAffordability}
-                    grossIncome={grossIncome}
-                    compareParams={compareParams}
-                    onCellClick={handleCellClick}
-                    pinnedCells={pinnedCells}
-                  />
-                </div>
-
-                {showAffordability && (
-                  <div className="module-card">
-                    <p className="module-card__title rent">Affordability — DTI overlay</p>
-                    <AffordabilityControls grossIncome={grossIncome} onChange={setGrossIncome} />
-                  </div>
-                )}
-
-                {activeTab === "compare" && (
-                  <div className="module-card">
-                    <p className="module-card__title compare">Scenario B — what-if</p>
-                    <CompareControls
-                      compareOverrides={compareOverrides}
-                      params={params}
-                      onChange={updateOverride}
-                      onReset={() => setCompareOverrides({
-                        annualRate: Math.max(0.01, params.annualRate - 0.01),
-                        termYears: params.termYears,
-                        downPaymentPct: params.downPaymentPct,
-                      })}
-                    />
-                  </div>
-                )}
-
-                <div className="controls-card">
-                  <p className="controls-card__title">Inputs</p>
-                  <Controls
-                    params={params}
-                    onChange={setParams}
-                    onReset={handleReset}
-                    valueMode={valueMode}
-                    onValueModeChange={setValueMode}
-                  />
-                </div>
-              </div>
-
-              <aside className="heatmap-rail">
-                <PinnedCellsCard
-                  pinnedCells={pinnedCells}
-                  params={params}
-                  onRemove={removePin}
-                  onClear={clearPins}
-                />
-              </aside>
-            </div>
+            <SummaryStats data={heatmapData} valueMode={valueMode} />
           </div>
+
+          <div className="tool-viz" key={tabKey}>
+            <Heatmap
+              params={params}
+              data={heatmapData}
+              prices={prices}
+              taxes={taxes}
+              valueMode={valueMode}
+              showAffordability={showAffordability}
+              grossIncome={grossIncome}
+              compareParams={compareParams}
+              onCellClick={handleCellClick}
+              pinnedCells={pinnedCells}
+            />
+          </div>
+
+          <button
+            className="drilldown-toggle"
+            onClick={() => setDrilldownOpen(true)}
+            aria-label="Open amortization drilldown"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M2 8h12M8 2v12" />
+            </svg>
+            Open amortization
+          </button>
         </section>
 
-        <section className="drilldown" id="drilldown" ref={drilldownRef}>
-          <div className="drilldown__inner">
-            <p className="drilldown__overline">Cell drilldown</p>
-            <h2 className="drilldown__title">
-              Thirty years of <em>this</em> payment
-            </h2>
-            <div className="drilldown__grid">
-              <BreakdownStack
-                params={params}
-                selectedCell={selectedCell}
-                fallback={medianCell}
-              />
-              <AmortizationChart
-                params={params}
-                selectedCell={selectedCell || medianCell}
-              />
-            </div>
+        <aside className="tool-rail tool-rail--right">
+          <div className="tool-rail__scroll">
+            <BreakdownStack
+              params={params}
+              selectedCell={selectedCell}
+              fallback={medianCell}
+            />
+            <PinnedCellsCard
+              pinnedCells={pinnedCells}
+              params={params}
+              onRemove={removePin}
+              onClear={clearPins}
+            />
           </div>
-        </section>
-
-        <Methodology />
-
-        <Footer repoUrl={REPO_URL} />
+        </aside>
       </main>
+
+      {drilldownOpen && (
+        <div
+          className="drilldown-modal"
+          role="dialog"
+          aria-label="Amortization schedule"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setDrilldownOpen(false);
+          }}
+        >
+          <div className="drilldown-modal__panel">
+            <div className="drilldown-modal__header">
+              <p className="drilldown-modal__overline">Amortization · 30-year payoff</p>
+              <button
+                className="icon-btn"
+                onClick={() => setDrilldownOpen(false)}
+                aria-label="Close drilldown"
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <path d="M3 3l10 10M13 3l-10 10" />
+                </svg>
+              </button>
+            </div>
+            <AmortizationChart params={params} selectedCell={detailCell} />
+          </div>
+        </div>
+      )}
 
       <div className={`copy-flash${copyFlash ? " visible" : ""}`} role="status" aria-live="polite">
         {copyFlash ? "URL copied" : ""}

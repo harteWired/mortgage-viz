@@ -1718,3 +1718,454 @@ html[data-theme="light"] .breakdown-stack__seg {
     transform: none !important;
   }
 }
+
+/* ============================================================
+   TOOL LAYOUT — viewport-locked, no scroll narrative
+   ============================================================
+   .app--tool wraps the full app when running in tool-only mode.
+   The hero/thesis/methodology editorial sections still exist as
+   components, just unused here. Layout: thin nav row + main grid
+   (left controls rail | center viz | right detail rail).
+   ============================================================ */
+
+.app--tool {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100svh;
+  overflow: hidden;
+}
+
+/* Compact nav — sticky top, no fixed positioning needed inside grid */
+.app-nav--compact {
+  position: sticky;
+  top: 0;
+  background: var(--color-bg-surface);
+  border-bottom: var(--border-subtle);
+  padding-block: var(--space-sm);
+  padding-inline: var(--space-md);
+  z-index: var(--z-nav);
+}
+
+.app-nav--compact .app-nav__inner {
+  max-width: none;
+  margin: 0;
+}
+
+.app-nav--compact .app-nav__wordmark {
+  font-size: var(--text-1);
+}
+
+/* Main grid — three columns, fills remaining viewport */
+.tool-main {
+  position: relative;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) 320px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 1280px) {
+  .tool-main {
+    grid-template-columns: 260px minmax(0, 1fr) 300px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .tool-main {
+    grid-template-columns: 240px minmax(0, 1fr) 280px;
+  }
+}
+
+/* Rails — bordered surfaces with internal scroll */
+.tool-rail {
+  background: var(--color-bg-surface);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.tool-rail--left {
+  border-right: var(--border-subtle);
+}
+
+.tool-rail--right {
+  border-left: var(--border-subtle);
+}
+
+.tool-rail__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* Override .controls grid so it stacks in the narrower left rail */
+.tool-rail--left .controls {
+  grid-template-columns: 1fr;
+}
+
+.tool-rail--left .axis-ranges {
+  grid-template-columns: 1fr;
+}
+
+/* Override .module-card affordability/compare grids in the rail */
+.tool-rail--left .affordability-controls,
+.tool-rail--left .compare-controls {
+  grid-template-columns: 1fr;
+}
+
+/* Wrap the inline controls without the shadowing card so the rail reads as one panel */
+.tool-rail--left .controls,
+.tool-rail--left .affordability-controls,
+.tool-rail--left .compare-controls {
+  padding: 0;
+}
+
+/* Sheet handle and rail toggle — only visible in their respective contexts */
+.sheet-handle {
+  display: none;
+}
+
+/* Sheet backdrop — fixed by default so it never takes a grid cell on
+   desktop. Only visible on mobile when the bottom sheet is open. */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  pointer-events: none;
+  z-index: 70;
+}
+
+.rail-toggle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: var(--border-subtle);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--color-bg-elevated);
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  z-index: 10;
+  transition: color var(--duration-micro), background var(--duration-micro);
+}
+
+.rail-toggle:hover {
+  color: var(--color-ember);
+  background: oklch(from var(--color-ember) l c h / 0.08);
+}
+
+.rail-toggle--left {
+  left: 280px;
+  border-left: none;
+}
+
+@media (max-width: 1280px) { .rail-toggle--left { left: 260px; } }
+@media (max-width: 1100px) { .rail-toggle--left { left: 240px; } }
+
+.tool-rail--left.collapsed + .rail-toggle--left {
+  left: 0;
+}
+
+.tool-rail--left.collapsed {
+  display: none;
+}
+
+.tool-rail--left.collapsed ~ .tool-center {
+  /* nothing special — grid auto-collapses */
+}
+
+/* When left rail collapses, expand the grid. Use a className flag rather
+   than :has() so the mobile media query can cleanly override both states. */
+.tool-main--rail-collapsed {
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+@media (max-width: 1280px) {
+  .tool-main--rail-collapsed {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+@media (max-width: 1100px) {
+  .tool-main--rail-collapsed {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+}
+
+/* Center column — topbar + viz + drilldown opener */
+.tool-center {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+  min-width: 0;
+  padding: var(--space-md);
+  gap: var(--space-md);
+  background: var(--color-bg-base);
+  position: relative;
+}
+
+.tool-center__topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.tool-center__topbar .tab-bar {
+  margin-bottom: 0;
+  border-bottom: none;
+  flex-shrink: 0;
+}
+
+.tool-center__topbar .summary-stats {
+  flex: 1;
+  min-width: 280px;
+  padding: var(--space-sm) var(--space-md);
+}
+
+.tool-center__topbar .stat {
+  gap: 0;
+}
+
+.tool-center__topbar .stat-value {
+  font-size: var(--text-1);
+}
+
+/* Viz fills its grid track */
+.tool-viz {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+}
+
+.tool-viz .heatmap-container {
+  /* Override the editorial aspect-ratio behavior */
+  flex: 1;
+  aspect-ratio: auto;
+  min-height: 0;
+  height: 100%;
+}
+
+/* Drilldown opener — small button beneath the heatmap */
+.drilldown-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 0.45rem 0.85rem;
+  border: 1px solid oklch(from var(--color-ember) l c h / 0.4);
+  border-radius: var(--radius-sm);
+  background: oklch(from var(--color-ember) l c h / 0.08);
+  color: var(--color-ember);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-overline);
+  cursor: pointer;
+  align-self: start;
+  transition: background var(--duration-micro), transform var(--duration-micro);
+}
+
+.drilldown-toggle:hover,
+.drilldown-toggle:focus-visible {
+  background: oklch(from var(--color-ember) l c h / 0.16);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+/* Right rail tightening */
+.tool-rail--right .breakdown-stack,
+.tool-rail--right .pinned-cells-card,
+.tool-rail--right .module-card {
+  border-radius: var(--radius-md);
+}
+
+/* Drilldown modal — full-screen overlay with the amort chart */
+.drilldown-modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  background: oklch(from var(--color-ink) l c h / 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: drilldownFade 200ms var(--ease-standard);
+}
+
+@keyframes drilldownFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.drilldown-modal__panel {
+  width: min(960px, 100%);
+  max-height: 85vh;
+  background: var(--color-bg-surface);
+  border: var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.drilldown-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.drilldown-modal__overline {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-ember);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-overline);
+}
+
+.drilldown-modal__panel .amortization-panel {
+  background: transparent;
+  border: none;
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ─── Tool layout — mobile/tablet ─── */
+@media (max-width: 900px) {
+  .app--tool {
+    height: auto;
+    min-height: 100svh;
+    overflow: visible;
+  }
+
+  .tool-main,
+  .tool-main--rail-collapsed {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  .rail-toggle {
+    display: none;
+  }
+
+  /* Left rail becomes a bottom sheet */
+  .tool-rail--left {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 70vh;
+    border-right: none;
+    border-top: var(--border-subtle);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 -4px 20px oklch(0 0 0 / 0.4);
+    transition: transform 350ms cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 80;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .tool-rail--left .sheet-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0.6rem 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .sheet-handle-label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--color-fg-muted);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-overline);
+  }
+
+  .tool-rail--left.collapsed {
+    display: flex;
+    transform: translateY(calc(100% - 40px - env(safe-area-inset-bottom)));
+  }
+
+  .tool-rail--left:not(.collapsed) ~ .sheet-backdrop,
+  .sheet-backdrop {
+    background: oklch(0 0 0 / 0.4);
+    pointer-events: auto;
+  }
+
+  /* Right rail wraps under center */
+  .tool-rail--right {
+    border-left: none;
+    border-top: var(--border-subtle);
+    order: 3;
+  }
+
+  .tool-center {
+    order: 2;
+    padding: var(--space-sm);
+    gap: var(--space-sm);
+  }
+
+  .tool-viz {
+    aspect-ratio: 1 / 1;
+    min-height: 320px;
+  }
+
+  .tool-viz .heatmap-container {
+    aspect-ratio: 1 / 1;
+    height: auto;
+  }
+
+  /* Pad the bottom of the page so the bottom-sheet handle doesn't
+     cover the right-rail content. */
+  .tool-rail--right {
+    padding-bottom: 60px;
+  }
+
+  .app-nav--compact {
+    padding-inline: var(--space-sm);
+  }
+
+  .app-nav--compact .app-nav__lab-link {
+    display: none;
+  }
+
+  .tool-center__topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tool-center__topbar .summary-stats {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-sm);
+  }
+}
+
+/* Stats compaction in the topbar */
+.tool-center__topbar .summary-stats .stat-label {
+  font-size: 0.6rem;
+}
+
+/* When the heatmap is in the tool view, the hint sits over the legend */
+.app--tool .heatmap-hint {
+  bottom: 4px;
+}
