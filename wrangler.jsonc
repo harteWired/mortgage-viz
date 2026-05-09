@@ -1,0 +1,20 @@
+{
+  // Cloudflare Worker config for lab.mattharte.com/mortgage-viz/.
+  // The Worker strips the /mortgage-viz/ prefix and forwards to the
+  // static-assets binding, which serves the Vite production build
+  // from ./dist (Vite's default output dir, gitignored).
+  //
+  // Routes are configured in the Cloudflare dashboard, not here:
+  //   lab.mattharte.com/mortgage-viz/*  → this Worker
+  //
+  // Pattern source: git-publishing/templates/lab-subproject/wrangler.jsonc
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lab-mortgage-viz",
+  "main": "worker/worker.js",
+  "compatibility_date": "2026-04-26",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  }
+}
