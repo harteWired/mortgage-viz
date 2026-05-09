@@ -2,7 +2,7 @@
 
 What does this house actually cost per month? Not the Zillow estimate, not the lender's napkin math — the real number, with tax and insurance and PMI and HOA all baked in, across a grid of prices and tax amounts so you can see the full landscape at once.
 
-![License](https://img.shields.io/github/license/harteWired/mortgage-viz?style=flat) ![Deploy](https://img.shields.io/github/actions/workflow/status/harteWired/mortgage-viz/deploy.yml?label=deploy&style=flat)
+![License](https://img.shields.io/github/license/harteWired/mortgage-viz?style=flat) ![Deploy](https://img.shields.io/github/actions/workflow/status/harteWired/mortgage-viz/deploy.yml?label=deploy&style=flat) [![by harteWired](https://img.shields.io/badge/by-harteWired-e6a562?style=flat&labelColor=15151e)](https://github.com/harteWired)
 
 **[Try it live →](https://harteWired.github.io/mortgage-viz/)**
 
