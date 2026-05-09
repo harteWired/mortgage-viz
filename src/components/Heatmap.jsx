@@ -1,6 +1,6 @@
 import { useRef, useEffect, useMemo, useState, useCallback } from "react";
 import * as d3 from "d3";
-import { rentBoundaryPoints, calcTotalMonthly, calcDTI, getDTIBand } from "../utils/mortgage";
+import { rentBoundaryPoints, calcTotalMonthly } from "../utils/mortgage";
 const MARGIN_DESKTOP = { top: 24, right: 90, bottom: 70, left: 100 };
 const MARGIN_MOBILE = { top: 16, right: 50, bottom: 50, left: 60 };
 
@@ -107,23 +107,12 @@ function mortgagePalette(t) {
   return oklchToRgb(L, C, H);
 }
 
-// DTI overlay tints — editorial state palette (fern/saffron/clay/garnet).
-// Comfortable is fully transparent so green doesn't dominate the grid.
-const DTI_COLORS = {
-  comfortable: "rgba(63, 122, 74, 0.0)",
-  stretching:  "rgba(232, 181, 62, 0.20)",
-  maximum:     "rgba(184, 108, 74, 0.25)",
-  overlimit:   "rgba(188, 64, 54, 0.32)",
-};
-
 export default function Heatmap({
   params,
   data,
   prices,
   taxes,
   valueMode = "monthly",
-  showAffordability = false,
-  grossIncome = 100000,
   compareParams = null,
   onCellClick,
   pinnedCells = [],
@@ -220,8 +209,6 @@ export default function Heatmap({
     const bw = x.bandwidth();
     const bh = y.bandwidth();
 
-    const grossMonthly = grossIncome / 12;
-
     // Cells with animated transitions
     const cells = g.selectAll("rect.cell").data(data, (d) => `${d.price}-${d.tax}`);
 
@@ -240,26 +227,6 @@ export default function Heatmap({
     cells.exit().transition().duration(150).attr("opacity", 0).remove();
 
     const allCells = cellEnter.merge(cells);
-
-    // Affordability overlay
-    if (showAffordability) {
-      const affData = data.filter((d) => {
-        const dti = calcDTI(d.payment, grossMonthly);
-        const band = getDTIBand(dti);
-        return band && band.color !== "comfortable";
-      });
-      const affG = g.append("g").attr("class", "affordability-overlay").style("pointer-events", "none");
-      affG.selectAll("rect").data(affData, (d) => `${d.price}-${d.tax}`).join("rect")
-        .attr("x", (d) => x(String(d.price)))
-        .attr("y", (d) => y(String(d.tax)))
-        .attr("width", bw).attr("height", bh)
-        .attr("fill", (d) => {
-          const dti = calcDTI(d.payment, grossMonthly);
-          const band = getDTIBand(dti);
-          return DTI_COLORS[band.color];
-        })
-        .attr("rx", 1);
-    }
 
     // Compare overlay — second rent boundary line + filled zone between A and B
 
@@ -293,12 +260,6 @@ export default function Heatmap({
         : `$${(d.price / 1000).toFixed(0)}k`;
 
       let extra = "";
-      if (showAffordability) {
-        const dti = calcDTI(d.total, grossMonthly);
-        const band = getDTIBand(dti);
-        extra = `<div class="tooltip-dti ${band.color}">DTI: ${(dti * 100).toFixed(1)}% — ${band.label}</div>`;
-      }
-
       if (compareParams) {
         const fullB = { ...params, ...compareParams };
         const bPayment = calcTotalMonthly({ homePrice: d.price, downPaymentPct: fullB.downPaymentPct, annualRate: fullB.annualRate, termYears: fullB.termYears, annualTax: d.tax, insuranceRate: fullB.insuranceRate, monthlyHOA: fullB.monthlyHOA });
@@ -656,7 +617,7 @@ export default function Heatmap({
       svgEl.removeEventListener("touchmove", onTouchMove);
       svgEl.removeEventListener("touchend", onTouchEnd);
     };
-  }, [data, prices, taxes, dimensions, boundaryPoints, compareBoundaryPoints, params, compareParams, valueMode, showAffordability, grossIncome, pinnedCells, handleCellClick]);
+  }, [data, prices, taxes, dimensions, boundaryPoints, compareBoundaryPoints, params, compareParams, valueMode, pinnedCells, handleCellClick]);
 
   return (
     <div className="heatmap-container" ref={containerRef}>

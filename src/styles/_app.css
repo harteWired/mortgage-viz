@@ -319,6 +319,9 @@ html[data-theme="light"] .app-nav--scrolled {
 }
 
 .app-nav__lab-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   color: var(--color-fg-muted);
@@ -326,6 +329,15 @@ html[data-theme="light"] .app-nav--scrolled {
   letter-spacing: var(--letter-spacing-overline);
   text-decoration: none;
   transition: color var(--duration-micro) var(--ease-standard);
+}
+
+.app-nav__rabbit {
+  width: 22px;
+  height: 22px;
+  display: block;
+  flex-shrink: 0;
+  /* Subtle lift on light backgrounds; the icon already reads on dark. */
+  filter: drop-shadow(0 1px 0 oklch(from var(--color-bg-base) l c h / 0.4));
 }
 
 .app-nav__lab-link:hover,
@@ -846,7 +858,7 @@ html[data-theme="light"] .app-nav--scrolled {
   color: var(--color-ember);
 }
 
-/* ─── Affordability + Compare cards (live in main column above heatmap) ─── */
+/* ─── Compare card (lives in left rail) ─── */
 .module-card {
   background: var(--color-bg-elevated);
   border: var(--border-subtle);
@@ -866,69 +878,32 @@ html[data-theme="light"] .app-nav--scrolled {
 .module-card__title.rent { color: var(--color-sage); }
 .module-card__title.compare { color: var(--color-iris); }
 
-.affordability-controls,
 .compare-controls {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: var(--space-md);
 }
 
-.affordability-controls h2,
 .compare-controls h2 {
   display: none;
 }
 
-.affordability-controls label,
 .compare-controls label {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
 }
 
-.affordability-controls label > span,
 .compare-controls label > span {
   font-size: var(--text-sm);
   color: var(--color-fg-muted);
 }
 
-.affordability-controls .hint,
 .compare-controls .compare-hint {
   font-size: 0.7rem;
   color: var(--color-fg-subtle);
   grid-column: 1 / -1;
 }
-
-.dti-legend {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-md);
-  padding-top: var(--space-sm);
-  border-top: 1px solid oklch(from var(--color-fg-base) l c h / 0.06);
-}
-
-.dti-band {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-}
-
-.dti-swatch {
-  width: 10px; height: 10px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-.dti-band.comfortable { color: var(--color-fern); }
-.dti-band.comfortable .dti-swatch { background: var(--color-fern); }
-.dti-band.stretching { color: var(--color-saffron); }
-.dti-band.stretching .dti-swatch { background: var(--color-saffron); }
-.dti-band.maximum { color: var(--color-clay); }
-.dti-band.maximum .dti-swatch { background: var(--color-clay); }
-.dti-band.overlimit { color: var(--color-garnet); }
-.dti-band.overlimit .dti-swatch { background: var(--color-garnet); }
 
 .compare-controls .input-row input[type="range"]::-webkit-slider-thumb { background: var(--color-iris); }
 .compare-controls .input-row input[type="range"]::-moz-range-thumb { background: var(--color-iris); }
@@ -1090,18 +1065,6 @@ html[data-theme="light"] .app-nav--scrolled {
   border-top: 1px solid oklch(from var(--color-fg-base) l c h / 0.08);
   padding-top: var(--space-xs);
 }
-
-.tooltip .tooltip-dti {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: var(--font-weight-semibold);
-  padding: var(--space-xs) 0 0;
-}
-
-.tooltip .tooltip-dti.comfortable { color: var(--color-fern); }
-.tooltip .tooltip-dti.stretching { color: var(--color-saffron); }
-.tooltip .tooltip-dti.maximum    { color: var(--color-clay); }
-.tooltip .tooltip-dti.overlimit  { color: var(--color-garnet); }
 
 .tooltip .tooltip-diff {
   font-family: var(--font-mono);
@@ -1812,15 +1775,13 @@ html[data-theme="light"] .breakdown-stack__seg {
   grid-template-columns: 1fr;
 }
 
-/* Override .module-card affordability/compare grids in the rail */
-.tool-rail--left .affordability-controls,
+/* Override .module-card compare grid in the rail */
 .tool-rail--left .compare-controls {
   grid-template-columns: 1fr;
 }
 
 /* Wrap the inline controls without the shadowing card so the rail reads as one panel */
 .tool-rail--left .controls,
-.tool-rail--left .affordability-controls,
 .tool-rail--left .compare-controls {
   padding: 0;
 }

@@ -4,7 +4,6 @@ import Controls from "./components/Controls";
 import Heatmap from "./components/Heatmap";
 import TabBar from "./components/TabBar";
 import AmortizationChart from "./components/AmortizationChart";
-import AffordabilityControls from "./components/AffordabilityControls";
 import CompareControls from "./components/CompareControls";
 import SummaryStats from "./components/SummaryStats";
 import ExportButton from "./components/ExportButton";
@@ -39,7 +38,6 @@ export default function App() {
   const [params, setParams] = useState(initial.params);
   const [activeTab, setActiveTab] = useState(initial.extra.activeTab || "payment");
   const [valueMode, setValueMode] = useState(initial.extra.valueMode || "monthly");
-  const [grossIncome, setGrossIncome] = useState(initial.extra.grossIncome ?? 100000);
 
   const [compareOverrides, setCompareOverrides] = useState(() => ({
     annualRate: Math.max(0.01, initial.params.annualRate - 0.01),
@@ -78,8 +76,8 @@ export default function App() {
 
   // URL sync
   useEffect(() => {
-    replaceState(params, { activeTab, valueMode, grossIncome });
-  }, [params, activeTab, valueMode, grossIncome]);
+    replaceState(params, { activeTab, valueMode });
+  }, [params, activeTab, valueMode]);
 
   const handleCellClick = useCallback((cell) => {
     let isUnpin = false;
@@ -157,7 +155,6 @@ export default function App() {
     }
   }, []);
 
-  const showAffordability = activeTab === "affordability";
   const compareParams = activeTab === "compare" ? compareOverrides : null;
   const detailCell = selectedCell || medianCell;
 
@@ -196,9 +193,6 @@ export default function App() {
               valueMode={valueMode}
               onValueModeChange={setValueMode}
             />
-            {showAffordability && (
-              <AffordabilityControls grossIncome={grossIncome} onChange={setGrossIncome} />
-            )}
             {activeTab === "compare" && (
               <CompareControls
                 compareOverrides={compareOverrides}
@@ -243,8 +237,6 @@ export default function App() {
               prices={prices}
               taxes={taxes}
               valueMode={valueMode}
-              showAffordability={showAffordability}
-              grossIncome={grossIncome}
               compareParams={compareParams}
               onCellClick={handleCellClick}
               pinnedCells={pinnedCells}

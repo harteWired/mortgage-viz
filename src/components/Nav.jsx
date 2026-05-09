@@ -45,6 +45,14 @@ export default function Nav({ theme, onToggleTheme, onShare, repoUrl, compact = 
     >
       <div className="app-nav__inner">
         <a className="app-nav__lab-link" href="https://github.com/harteWired">
+          <img
+            className="app-nav__rabbit"
+            src={`${import.meta.env.BASE_URL}whiterabbit.png`}
+            alt=""
+            width="22"
+            height="22"
+            aria-hidden="true"
+          />
           harteWired
         </a>
 
