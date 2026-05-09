@@ -1862,10 +1862,10 @@ html[data-theme="light"] .breakdown-stack__seg {
   }
 }
 
-/* Center column — topbar + viz + drilldown opener */
+/* Center column — topbar + viz (drilldown opener floats over the viz). */
 .tool-center {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
   min-height: 0;
   min-width: 0;
   padding: var(--space-md);
@@ -1901,7 +1901,7 @@ html[data-theme="light"] .breakdown-stack__seg {
   font-size: var(--text-1);
 }
 
-/* Viz fills its grid track */
+/* Viz fills its grid track. */
 .tool-viz {
   min-height: 0;
   min-width: 0;
@@ -1916,28 +1916,33 @@ html[data-theme="light"] .breakdown-stack__seg {
   height: 100%;
 }
 
-/* Drilldown opener — small button beneath the heatmap */
+/* Drilldown opener — small button in the topbar alongside tabs/stats.
+   Used to live below the heatmap, but at constrained heights it
+   crowded the "Home Price" axis title and the right-rail pinned-cells
+   content. Tucked into the topbar it stays discoverable without
+   stealing vertical room from the heatmap. */
 .drilldown-toggle {
   display: inline-flex;
   align-items: center;
   gap: var(--space-xs);
-  padding: 0.45rem 0.85rem;
+  padding: 0.4rem 0.75rem;
   border: 1px solid oklch(from var(--color-ember) l c h / 0.4);
   border-radius: var(--radius-sm);
   background: oklch(from var(--color-ember) l c h / 0.08);
   color: var(--color-ember);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-overline);
   cursor: pointer;
-  align-self: start;
-  transition: background var(--duration-micro), transform var(--duration-micro);
+  flex-shrink: 0;
+  transition: background var(--duration-micro), transform var(--duration-micro), border-color var(--duration-micro);
 }
 
 .drilldown-toggle:hover,
 .drilldown-toggle:focus-visible {
-  background: oklch(from var(--color-ember) l c h / 0.16);
+  background: oklch(from var(--color-ember) l c h / 0.18);
+  border-color: var(--color-ember);
   transform: translateY(-1px);
   outline: none;
 }

@@ -228,6 +228,16 @@ export default function App() {
           <div className="tool-center__topbar">
             <TabBar active={activeTab} onChange={handleTabChange} />
             <SummaryStats data={heatmapData} valueMode={valueMode} />
+            <button
+              className="drilldown-toggle"
+              onClick={() => setDrilldownOpen(true)}
+              aria-label="Open amortization drilldown"
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                <path d="M2 8h12M8 2v12" />
+              </svg>
+              Amortization
+            </button>
           </div>
 
           <div className="tool-viz" key={tabKey}>
@@ -242,17 +252,6 @@ export default function App() {
               pinnedCells={pinnedCells}
             />
           </div>
-
-          <button
-            className="drilldown-toggle"
-            onClick={() => setDrilldownOpen(true)}
-            aria-label="Open amortization drilldown"
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <path d="M2 8h12M8 2v12" />
-            </svg>
-            Open amortization
-          </button>
         </section>
 
         <aside className="tool-rail tool-rail--right">
