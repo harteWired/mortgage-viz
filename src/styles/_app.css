@@ -1370,10 +1370,13 @@ html[data-theme="light"] .app-nav--scrolled {
 }
 
 .amort-legend-line--dashed {
-  background-image: repeating-linear-gradient(
+  /* Single shorthand so background-color resets to transparent (initial)
+     and the gradient survives. The earlier two-line form had
+     `background: transparent !important` after `background-image`,
+     which silently nuked the dashes. */
+  background: repeating-linear-gradient(
     90deg, var(--color-iris) 0 5px, transparent 5px 9px
   ) !important;
-  background: transparent !important;
 }
 
 /* Breakdown stack */
