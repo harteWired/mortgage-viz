@@ -24,7 +24,20 @@ export default function PinnedCellsCard({ pinnedCells, params, onRemove, onClear
     [pinnedCells, params],
   );
   if (!pinnedCells.length) {
-    return null;
+    return (
+      <div className="module-card pinned-cells-card">
+        <p className="module-card__title">Pinned cells</p>
+        <p style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "0.75rem",
+          color: "var(--color-fg-subtle)",
+          textTransform: "uppercase",
+          letterSpacing: "var(--letter-spacing-overline)"
+        }}>
+          Click any cell on the heatmap to pin it for comparison.
+        </p>
+      </div>
+    );
   }
 
   return (

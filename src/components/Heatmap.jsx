@@ -623,9 +623,6 @@ export default function Heatmap({
     <div className="heatmap-container" ref={containerRef}>
       <svg ref={svgRef}></svg>
       <div className="tooltip" ref={tooltipRef}></div>
-      {pinnedCells.length === 0 && (
-        <div className="heatmap-hint">Click a cell to pin it for comparison</div>
-      )}
     </div>
   );
 }
