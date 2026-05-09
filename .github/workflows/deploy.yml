@@ -1,4 +1,14 @@
-name: Deploy to GitHub Pages
+name: Deploy redirect stub to GitHub Pages
+
+# Canonical for mortgage-viz lives at lab.mattharte.com/mortgage-viz/
+# (served via the parent web-design-pipeline repo's docs/mortgage-viz/
+# directory under the lab-mattharte-com Cloudflare Worker). This
+# workflow no longer builds the Vite app — it just publishes a
+# meta-refresh + JS redirect from the legacy hartewired.github.io/mortgage-viz/
+# URL so old bookmarks and external links keep working.
+#
+# To make a UI change live: build locally, copy dist/ into
+# web-design-pipeline/docs/mortgage-viz/, commit + push that repo.
 
 on:
   push:
@@ -18,15 +28,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: gh-pages-redirect
 
   deploy:
     needs: build
