@@ -44,8 +44,8 @@ export default function Nav({ theme, onToggleTheme, onShare, repoUrl, compact = 
       }
     >
       <div className="app-nav__inner">
-        <a className="app-nav__lab-link" href="https://mattharte.com/">
-          mattharte<span>.com</span>
+        <a className="app-nav__lab-link" href="https://github.com/harteWired">
+          harteWired
         </a>
 
         <span className="app-nav__wordmark">
