@@ -1,14 +1,16 @@
 import { useRef, useEffect, useMemo, useState, useCallback } from "react";
 import * as d3 from "d3";
-import { rentBoundaryPoints, calcTotalMonthly, calcDTI, getDTIBand } from "../utils/mortgage";
+import { rentBoundaryPoints, calcTotalMonthly } from "../utils/mortgage";
 const MARGIN_DESKTOP = { top: 24, right: 90, bottom: 70, left: 100 };
 const MARGIN_MOBILE = { top: 16, right: 50, bottom: 50, left: 60 };
 
 function applyTextHalo(sel) {
+  // Halo reads from a CSS var so it tracks the active theme — light
+  // mode flips to a cream halo, dark stays ink-toned.
   sel
     .attr("paint-order", "stroke")
-    .attr("stroke", "rgba(205, 200, 190, 0.9)")
-    .attr("stroke-width", 5)
+    .attr("stroke", "var(--text-halo)")
+    .attr("stroke-width", 4)
     .attr("stroke-linejoin", "round");
 }
 
@@ -69,18 +71,25 @@ function oklchToRgb(L, C, H) {
   return `rgb(${clamp(rl)},${clamp(gl)},${clamp(bl)})`;
 }
 
-// Perceptually uniform palette — interpolates in OKLCH, outputs rgb for D3
-// Cool teal → sage green → warm gold → terracotta → deep rust
+// Editorial palette ramp — interpolates in OKLCH, outputs rgb for D3.
+// sage (cool) → ember (signature) → clay (warm). Anchored to portfolio
+// shell tokens so the heatmap belongs to the same visual language as
+// the rest of lab.mattharte.com.
+//
+// Stops are module-level so the ~900 cells × interpolator calls per
+// render don't reallocate the array each time.
+const PALETTE_STOPS = [
+  [0.00, [0.78, 0.12, 175]],  // sage — pale
+  [0.20, [0.72, 0.12, 165]],  // sage proper (--color-sage)
+  [0.40, [0.74, 0.13, 110]],  // sage→ember bridge, warm-yellow
+  [0.55, [0.78, 0.14, 55]],   // ember (--color-ember)
+  [0.75, [0.66, 0.14, 42]],   // ember→clay
+  [0.90, [0.59, 0.13, 35]],   // clay (--color-clay)
+  [1.00, [0.46, 0.13, 28]],   // deep clay
+];
+
 function mortgagePalette(t) {
-  const stops = [
-    [0.00, [0.44, 0.06, 220]],  // deep teal
-    [0.15, [0.50, 0.06, 195]],  // muted teal-green
-    [0.35, [0.58, 0.07, 145]],  // sage green
-    [0.55, [0.68, 0.08, 85]],   // warm gold
-    [0.75, [0.58, 0.11, 55]],   // terracotta
-    [0.90, [0.48, 0.13, 35]],   // burnt sienna
-    [1.00, [0.40, 0.13, 25]],   // deep rust
-  ];
+  const stops = PALETTE_STOPS;
   let i = 0;
   while (i < stops.length - 2 && stops[i + 1][0] < t) i++;
   const [t0, c0] = stops[i];
@@ -98,21 +107,12 @@ function mortgagePalette(t) {
   return oklchToRgb(L, C, H);
 }
 
-const DTI_COLORS = {
-  comfortable: "rgba(92, 122, 77, 0.0)",
-  stretching: "rgba(176, 141, 87, 0.2)",
-  maximum: "rgba(184, 90, 56, 0.25)",
-  overlimit: "rgba(139, 69, 52, 0.35)",
-};
-
 export default function Heatmap({
   params,
   data,
   prices,
   taxes,
   valueMode = "monthly",
-  showAffordability = false,
-  grossIncome = 100000,
   compareParams = null,
   onCellClick,
   pinnedCells = [],
@@ -194,10 +194,10 @@ export default function Heatmap({
     // Crosshair group
     const crosshairG = g.append("g").attr("class", "crosshair").style("pointer-events", "none");
     const crosshairV = crosshairG.append("line")
-      .attr("stroke", "rgba(46, 42, 36, 0.35)").attr("stroke-width", 1)
+      .attr("stroke", "var(--crosshair-stroke)").attr("stroke-width", 1)
       .attr("stroke-dasharray", "3,3").attr("stroke-linecap", "round").attr("opacity", 0);
     const crosshairH = crosshairG.append("line")
-      .attr("stroke", "rgba(46, 42, 36, 0.35)").attr("stroke-width", 1)
+      .attr("stroke", "var(--crosshair-stroke)").attr("stroke-width", 1)
       .attr("stroke-dasharray", "3,3").attr("stroke-linecap", "round").attr("opacity", 0);
 
     const fmt = (v) => {
@@ -208,8 +208,6 @@ export default function Heatmap({
     const fmtFull = (v) => "$" + Math.round(v).toLocaleString();
     const bw = x.bandwidth();
     const bh = y.bandwidth();
-
-    const grossMonthly = grossIncome / 12;
 
     // Cells with animated transitions
     const cells = g.selectAll("rect.cell").data(data, (d) => `${d.price}-${d.tax}`);
@@ -229,26 +227,6 @@ export default function Heatmap({
     cells.exit().transition().duration(150).attr("opacity", 0).remove();
 
     const allCells = cellEnter.merge(cells);
-
-    // Affordability overlay
-    if (showAffordability) {
-      const affData = data.filter((d) => {
-        const dti = calcDTI(d.payment, grossMonthly);
-        const band = getDTIBand(dti);
-        return band && band.color !== "comfortable";
-      });
-      const affG = g.append("g").attr("class", "affordability-overlay").style("pointer-events", "none");
-      affG.selectAll("rect").data(affData, (d) => `${d.price}-${d.tax}`).join("rect")
-        .attr("x", (d) => x(String(d.price)))
-        .attr("y", (d) => y(String(d.tax)))
-        .attr("width", bw).attr("height", bh)
-        .attr("fill", (d) => {
-          const dti = calcDTI(d.payment, grossMonthly);
-          const band = getDTIBand(dti);
-          return DTI_COLORS[band.color];
-        })
-        .attr("rx", 1);
-    }
 
     // Compare overlay — second rent boundary line + filled zone between A and B
 
@@ -282,12 +260,6 @@ export default function Heatmap({
         : `$${(d.price / 1000).toFixed(0)}k`;
 
       let extra = "";
-      if (showAffordability) {
-        const dti = calcDTI(d.total, grossMonthly);
-        const band = getDTIBand(dti);
-        extra = `<div class="tooltip-dti ${band.color}">DTI: ${(dti * 100).toFixed(1)}% — ${band.label}</div>`;
-      }
-
       if (compareParams) {
         const fullB = { ...params, ...compareParams };
         const bPayment = calcTotalMonthly({ homePrice: d.price, downPaymentPct: fullB.downPaymentPct, annualRate: fullB.annualRate, termYears: fullB.termYears, annualTax: d.tax, insuranceRate: fullB.insuranceRate, monthlyHOA: fullB.monthlyHOA });
@@ -311,7 +283,7 @@ export default function Heatmap({
     allCells
       .on("mouseenter", function (event, d) {
         d3.select(this).transition().duration(80)
-          .attr("stroke", "#2e2a24").attr("stroke-width", 2);
+          .attr("stroke", "var(--color-cream)").attr("stroke-width", 2);
 
         const cx = x(String(d.price)) + bw / 2;
         const cy = y(String(d.tax)) + bh / 2;
@@ -645,15 +617,12 @@ export default function Heatmap({
       svgEl.removeEventListener("touchmove", onTouchMove);
       svgEl.removeEventListener("touchend", onTouchEnd);
     };
-  }, [data, prices, taxes, dimensions, boundaryPoints, compareBoundaryPoints, params, compareParams, valueMode, showAffordability, grossIncome, pinnedCells, handleCellClick]);
+  }, [data, prices, taxes, dimensions, boundaryPoints, compareBoundaryPoints, params, compareParams, valueMode, pinnedCells, handleCellClick]);
 
   return (
     <div className="heatmap-container" ref={containerRef}>
       <svg ref={svgRef}></svg>
       <div className="tooltip" ref={tooltipRef}></div>
-      {pinnedCells.length === 0 && (
-        <div className="heatmap-hint">Click a cell to pin it for comparison</div>
-      )}
     </div>
   );
 }

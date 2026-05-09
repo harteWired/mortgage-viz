@@ -19,6 +19,13 @@ export default function AmortizationChart({ params, selectedCell }) {
     });
   }, [selectedCell, params]);
 
+  // Total paid across the full schedule — memoized so we don't reduce
+  // ~360 entries on every render of the panel header.
+  const totalPaid = useMemo(
+    () => schedule.reduce((acc, m) => acc + m.totalPayment, 0),
+    [schedule],
+  );
+
   // Aggregate to yearly (single O(n) pass)
   const yearly = useMemo(() => {
     if (!schedule.length) return [];
@@ -45,8 +52,8 @@ export default function AmortizationChart({ params, selectedCell }) {
     if (!yearly.length || !containerRef.current) return;
 
     const containerWidth = containerRef.current.clientWidth;
-    const containerHeight = Math.min(280, containerRef.current.clientHeight || 280);
-    const margin = { top: 20, right: 80, bottom: 36, left: 60 };
+    const containerHeight = Math.min(320, containerRef.current.clientHeight || 320);
+    const margin = { top: 20, right: 24, bottom: 36, left: 60 };
     const width = containerWidth - margin.left - margin.right;
     const height = containerHeight - margin.top - margin.bottom;
 
@@ -54,7 +61,8 @@ export default function AmortizationChart({ params, selectedCell }) {
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
-    svg.attr("width", containerWidth).attr("height", containerHeight);
+    svg.attr("width", containerWidth).attr("height", containerHeight)
+       .style("overflow", "visible");
 
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -73,10 +81,13 @@ export default function AmortizationChart({ params, selectedCell }) {
       .attr("stroke", "var(--border-subtle)")
       .attr("stroke-dasharray", "2,4");
 
+    // Pass var() strings straight to d3 so the SVG resolves them at
+    // paint time — chart re-themes via CSS inheritance without any
+    // JS re-execution on theme toggle.
     const colors = {
-      balance: "#8b4534",
-      equity: "#3d5a68",
-      interest: "#b08d57",
+      balance:  "var(--color-ember)",
+      equity:   "var(--color-sage)",
+      interest: "var(--color-iris)",
     };
 
     const line = d3.line().x((d) => x(d.year)).curve(d3.curveMonotoneX);
@@ -132,24 +143,7 @@ export default function AmortizationChart({ params, selectedCell }) {
     yAxisG.selectAll("text").attr("fill", "var(--text-muted)").attr("font-size", "10px");
     yAxisG.selectAll(".tick line").attr("stroke", "var(--border)");
 
-    // Legend
-    const legendData = [
-      { label: "Remaining Balance", color: colors.balance, dash: null },
-      { label: "Total Equity", color: colors.equity, dash: null },
-      { label: "Total Interest Paid", color: colors.interest, dash: "6,3" },
-    ];
-    const lg = g.append("g").attr("transform", `translate(${width + 12}, 0)`);
-    legendData.forEach((d, i) => {
-      const row = lg.append("g").attr("transform", `translate(0, ${i * 18})`);
-      row.append("line")
-        .attr("x1", 0).attr("x2", 16).attr("y1", 5).attr("y2", 5)
-        .attr("stroke", d.color).attr("stroke-width", 2)
-        .attr("stroke-dasharray", d.dash);
-      row.append("text")
-        .attr("x", 20).attr("y", 9)
-        .attr("fill", "var(--text-muted)").attr("font-size", "10px")
-        .text(d.label);
-    });
+    // (Legend rendered as HTML below the chart — see JSX.)
   }, [yearly, params.termYears]);
 
   if (!selectedCell) {
@@ -166,15 +160,29 @@ export default function AmortizationChart({ params, selectedCell }) {
   return (
     <div className="amortization-panel" ref={containerRef}>
       <div className="amort-header">
-        <h3>Amortization — {fmt(selectedCell.price)} home, {fmt(selectedCell.tax)}/yr tax</h3>
+        <h3>Amortization · {fmt(selectedCell.price)} home, {fmt(selectedCell.tax)}/yr tax</h3>
         {lastYear && (
           <div className="amort-stats">
-            <span>Total interest: <strong>{fmt(lastYear.totalInterest)}</strong></span>
-            <span>Total paid: <strong>{fmt(d3.sum(schedule, (m) => m.totalPayment))}</strong></span>
+            <span>Total interest <strong>{fmt(lastYear.totalInterest)}</strong></span>
+            <span>Total paid <strong>{fmt(totalPaid)}</strong></span>
           </div>
         )}
       </div>
       <svg ref={svgRef}></svg>
+      <div className="amort-legend">
+        <span className="amort-legend-item">
+          <span className="amort-legend-line" style={{ background: "var(--color-ember)" }} />
+          Remaining balance
+        </span>
+        <span className="amort-legend-item">
+          <span className="amort-legend-line" style={{ background: "var(--color-sage)" }} />
+          Total equity
+        </span>
+        <span className="amort-legend-item">
+          <span className="amort-legend-line amort-legend-line--dashed" style={{ background: "var(--color-iris)" }} />
+          Total interest paid
+        </span>
+      </div>
     </div>
   );
 }

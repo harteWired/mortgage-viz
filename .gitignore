@@ -4,3 +4,4 @@ dist/
 .claude/
 test-results/
 ux examples/
+tests/screenshots/v2-*.png

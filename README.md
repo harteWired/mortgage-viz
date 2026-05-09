@@ -4,16 +4,17 @@ What does this house actually cost per month? Not the Zillow estimate, not the l
 
 ![License](https://img.shields.io/github/license/harteWired/mortgage-viz?style=flat) ![Deploy](https://img.shields.io/github/actions/workflow/status/harteWired/mortgage-viz/deploy.yml?label=deploy&style=flat) [![by harteWired](https://img.shields.io/badge/by-harteWired-e6a562?style=flat&labelColor=15151e)](https://github.com/harteWired)
 
-**[Try it live →](https://harteWired.github.io/mortgage-viz/)**
+**[Try it live →](https://lab.mattharte.com/mortgage-viz/)**
 
 ## What It Does
 
-- **Payment heatmap** — 30×30 grid mapping home price (x) against annual property tax (y), color-coded by total monthly payment
-- **Rent boundary line** — shows exactly where buying costs more than your current rent
-- **Amortization schedule** — click any cell to see the full payoff curve with equity, balance, and total interest over the loan term
-- **Affordability overlay** — DTI-based color bands showing comfortable, stretching, maximum, and over-limit zones relative to your income
-- **Scenario comparison** — "What if?" tab overlays a second rent boundary with different rate/term/down payment, filled zone between the two lines
-- **Shareable URLs** — every parameter encodes into the URL, so you can send someone your exact view
+- **Editorial scroll** — hero, thesis, the tool itself, a per-cell drilldown, and a methodology section. Built to read, not just to operate.
+- **Payment heatmap** — 30×30 grid mapping home price (x) against annual property tax (y), color-coded by total monthly payment via an OKLCH sage→ember→clay ramp.
+- **Rent boundary line** — solves for the price where buying matches your current rent, drawn across the grid in sage.
+- **Per-cell drilldown** — click any cell to see a stacked monthly composition (P&I / tax / insurance / HOA / PMI) alongside the full thirty-year amortization curve.
+- **Scenario comparison** — "What if?" overlays a second rent-boundary line with different rate/term/down payment, with the filled zone between scenario A and B.
+- **Methodology** — the P&I formula, the variables, the assumptions the math doesn't make.
+- **Shareable URLs** — every parameter encodes into the URL, plus a copy-link button.
 
 ## Quick Start
 
@@ -30,37 +31,48 @@ Open `http://localhost:5173/mortgage-viz/` — the heatmap renders immediately w
 
 ![State and render flow: Controls → App State → D3 Heatmap / Amortization Chart / URL State, with click and popstate feedback loops back into state](docs/images/data-flow.png)
 
-The controls panel feeds loan parameters into React state. D3 renders a `scaleBand` grid with a custom color interpolation — steel teal through sage to terracotta. The rent boundary is computed by solving for the home price where `totalMonthly == currentRent` at each tax level, then drawing a `d3.line` with monotone interpolation.
+Loan parameters flow from the inline controls into React state. D3 renders a `scaleBand` grid with a custom OKLCH interpolation (`sage → ember → clay`) — perceptually uniform, anchored to the four-tier editorial palette shared with the rest of the lab. The rent boundary is computed by solving for the home price where `totalMonthly == currentRent` at each tax level, then drawn with monotone interpolation.
 
-Tabs are overlay modes — they modify the heatmap's behavior (affordability tints cells, compare adds a second boundary line) rather than replacing it. Click-to-pin lets you mark up to 5 cells for side-by-side reference.
+Tabs are overlay modes — Compare adds a second boundary line and a delta zone rather than replacing the base view. Clicking any cell pins it in the right rail (up to five) and exposes the per-cell amortization in the drilldown modal.
 
 ## Project Structure
 
 ```
 src/
-├── App.jsx                 # Root component, state, tab routing
+├── App.jsx                  # Root: state, scroll layout, theme, share
 ├── components/
-│   ├── Heatmap.jsx         # D3 heatmap + overlays + touch support
-│   ├── Controls.jsx        # Sidebar parameter inputs
+│   ├── Hero.jsx             # 100svh hero with morphing blobs + char-stagger entrance
+│   ├── Nav.jsx              # Top nav, .app-nav--scrolled fades on scroll
+│   ├── Thesis.jsx           # Editorial lead before the tool
+│   ├── Heatmap.jsx          # D3 heatmap + overlays + touch support
+│   ├── Controls.jsx         # Inline parameter inputs
 │   ├── AmortizationChart.jsx
-│   ├── AffordabilityControls.jsx
+│   ├── BreakdownStack.jsx   # P&I / tax / insurance / HOA / PMI stacked bar
+│   ├── PinnedCellsCard.jsx  # Right-rail pins
+│   ├── CompareControls.jsx
 │   ├── TabBar.jsx
 │   ├── SummaryStats.jsx
-│   └── ExportButton.jsx    # SVG → Canvas → PNG export
+│   ├── ExportButton.jsx     # SVG → Canvas → PNG export
+│   ├── Methodology.jsx      # Formula + assumptions
+│   └── Footer.jsx
 ├── utils/
-│   ├── mortgage.js         # Pure calculation functions
-│   └── urlState.js         # URL encode/decode
+│   ├── mortgage.js          # Pure calculation functions
+│   └── urlState.js          # URL encode/decode
 └── styles/
-    └── index.css           # Vintage infographic theme (CSS custom properties)
+    ├── _shell.css           # portfolio-shell.css v1.1.0 (verbatim)
+    ├── _app.css             # mortgage-viz-specific editorial styles
+    └── index.css            # Importer
 ```
 
 ## Background
 
-Rebuilt from a MATLAB tool I wrote as a first-time buyer — same brute-force grid approach, new stack. The original took a weekend of MATLAB wrangling and helped me buy a house. Then it sat on a hard drive for years. This version was built entirely through iterative conversation with Claude — architecture, D3 integration, visual design, the works. Three parallel review agents handled aesthetics, usability, and utility before a second pass synthesized their feedback.
+Rebuilt from a MATLAB tool I wrote as a first-time buyer — same brute-force grid approach, new stack. The original took a weekend of MATLAB wrangling and helped me buy a house. Then it sat on a hard drive for years.
+
+v1 was built entirely through iterative conversation with Claude — architecture, D3 integration, visual design. v2 (this version) is the editorial overhaul: re-skinned to a four-tier editorial palette and rebuilt as a scrollable editorial page so a cold visitor reads the thesis, sees the tool, drills into a cell, and understands the math — in that order.
 
 ## Configuration
 
-All parameters are adjustable in the sidebar:
+All parameters live in the inline controls below the heatmap:
 
 | Parameter | Range | Default |
 |:----------|:------|:--------|
@@ -75,7 +87,7 @@ Axis ranges (price and tax) are also configurable — useful for zooming into a 
 
 ## Tech Stack
 
-React 19 · Vite · D3.js · CSS custom properties · GitHub Pages
+React 19 · Vite · D3.js · CSS custom properties (OKLCH) · GitHub Pages · GitHub Actions
 
 ## License
 

@@ -160,25 +160,3 @@ export function generateAmortizationSchedule({ homePrice, downPaymentPct, annual
   }
   return schedule;
 }
-
-/**
- * Compute DTI ratio for a given monthly payment and gross monthly income.
- */
-export function calcDTI(monthlyPayment, grossMonthlyIncome) {
-  if (grossMonthlyIncome <= 0) return 0;
-  return monthlyPayment / grossMonthlyIncome;
-}
-
-/**
- * DTI band thresholds (front-end ratio — housing only).
- */
-export const DTI_BANDS = [
-  { max: 0.28, label: "Comfortable", color: "comfortable" },
-  { max: 0.36, label: "Stretching", color: "stretching" },
-  { max: 0.43, label: "Maximum", color: "maximum" },
-  { max: Infinity, label: "Over limit", color: "overlimit" },
-];
-
-export function getDTIBand(dti) {
-  return DTI_BANDS.find((b) => dti <= b.max);
-}

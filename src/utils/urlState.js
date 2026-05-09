@@ -19,7 +19,6 @@ const PARAM_MAP = {
 const EXTRA_MAP = {
   activeTab: { key: "tab", encode: String, decode: String },
   valueMode: { key: "mode", encode: String, decode: String },
-  grossIncome: { key: "income", encode: String, decode: Number },
 };
 
 export function encodeParams(params, extra = {}) {
